@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { buildEtimsPayloadForOrder, etimsSellerConfig, registerEtimsInvoice } from "@/lib/etims";
+import { buildEtimsInvoicePayload, etimsSellerConfig, registerEtimsInvoice } from "@/lib/etims";
 import { readTab, rowToOrder, SheetsConfigError, updateRow } from "@/lib/sheets";
 import type { DispatchOrder, EtimsItem } from "@/lib/types";
 
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const orderId = String(body.orderId ?? "");
     const items = (Array.isArray(body.items) ? body.items : []) as EtimsItem[];
+    const customerKraPin = String(body.kraPin ?? "").trim();
 
     if (!orderId) return Response.json({ error: "orderId is required." }, { status: 400 });
     if (!items.length) return Response.json({ error: "Ticket is empty." }, { status: 400 });
@@ -39,9 +40,21 @@ export async function POST(request: Request) {
       });
     }
 
-    // Build the KRA payload and register (mock when KRA_ETIMS_MOCK=true).
-    const payload = buildEtimsPayloadForOrder(order, items);
+    // Build the KRA payload from the order + per-line breakdown + customer PIN.
     const seller = etimsSellerConfig();
+    const hasTpin = /^[A-Z]\d{10}[A-Z]$/i.test(customerKraPin);
+    const payload = buildEtimsInvoicePayload(
+      {
+        invoiceNo: order.id,
+        tranDt: `${order.date.replace(/-/g, "")}${String(order.time || "000000").replace(/:/g, "")}`,
+        salesDt: order.date.replace(/-/g, ""),
+        customerName: order.customer,
+        customerKraPin: hasTpin ? customerKraPin : "",
+        items,
+        remark: `Dispatch ${order.id}`,
+      },
+      seller
+    );
     const result = await registerEtimsInvoice(payload, seller, order.id);
 
     // Persist the returned invoice metadata back on the ORDERS row.

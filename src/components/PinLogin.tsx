@@ -90,7 +90,7 @@ export default function PinLogin() {
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-sky-900/40">
             W
           </div>
-          <h1 className="mt-4 text-2xl font-black tracking-wide">QUENCHERS WATER</h1>
+          <h1 className="mt-4 text-2xl font-black tracking-wide">MIST WATER AND GAS DISTRIBUTORS</h1>
           <p className="text-sm text-slate-400 mt-1">Bulk Water POS · Local Terminal</p>
         </div>
 

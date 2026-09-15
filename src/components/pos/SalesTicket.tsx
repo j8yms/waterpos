@@ -19,6 +19,10 @@ export default function SalesTicket({
   drivers,
   onCharge,
   charging,
+  etimsOn,
+  setEtimsOn,
+  kraPin,
+  setKraPin,
 }: {
   items: CartItem[];
   setItems: (u: (items: CartItem[]) => CartItem[]) => void;
@@ -33,6 +37,10 @@ export default function SalesTicket({
   drivers: { id: string; name: string; role: string }[];
   onCharge: () => void;
   charging: boolean;
+  etimsOn: boolean;
+  setEtimsOn: (v: boolean) => void;
+  kraPin: string;
+  setKraPin: (v: string) => void;
 }) {
   const ticket = computeTicket(items, glovo);
 
@@ -62,6 +70,24 @@ export default function SalesTicket({
             accent={payStatus === "PAID" ? "emerald" : "rose"}
           />
         </div>
+
+        <Toggle checked={etimsOn} onChange={setEtimsOn} label="Generate KRA eTIMS" accent="sky" />
+
+        {etimsOn && (
+          <label className="block">
+            <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
+              Customer KRA PIN
+            </span>
+            <input
+              value={kraPin}
+              onChange={(e) => setKraPin(e.target.value.toUpperCase())}
+              placeholder="e.g. A012345678P"
+              maxLength={14}
+              autoComplete="off"
+              className="w-full h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+            />
+          </label>
+        )}
 
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">
           Assign Rider

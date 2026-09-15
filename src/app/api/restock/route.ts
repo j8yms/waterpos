@@ -1,10 +1,11 @@
-import { requireRole } from "@/lib/auth";
-import { readTab, SheetsConfigError, updateRow } from "@/lib/sheets";
+import { requireUser } from "@/lib/auth";
+import { appendRow, readTab, SheetsConfigError, updateRow } from "@/lib/sheets";
+import { nairobiDate, nairobiTime } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const user = requireRole(request, "management");
+  const user = requireUser(request);
   if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
 
   try {
@@ -24,7 +25,24 @@ export async function POST(request: Request) {
 
     const current = read.rows[idx];
     const currentStock = Math.max(0, Math.round(Number(current.stock) || 0));
+    const productName = String(current.name ?? "UNKNOWN");
 
+    // 1. Append a stock-in entry to the IN tab (audit log). ORDERS / sales
+    //    (OUT) rows are never touched here.
+    await appendRow("IN", {
+      id: `IN-${Date.now().toString(36)}`,
+      date: nairobiDate(),
+      time: nairobiTime(),
+      product_id: productId,
+      product: productName,
+      qty_added: addedUnits,
+      unit_cost: newWholesale ?? (Number(current.wholesale_cost) || 0),
+      new_price: newPrice ?? (Number(current.selling_price) || 0),
+      operator: user.name,
+      created_at: new Date().toISOString(),
+    });
+
+    // 2. Update the PRODUCTS master stock (and optional cost/price).
     const changes: Record<string, any> = {
       stock: currentStock + addedUnits,
       updated_at: new Date().toISOString(),

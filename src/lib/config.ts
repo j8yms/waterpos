@@ -68,6 +68,7 @@ export const TABS: Record<string, string[]> = {
     "created_at",
   ],
   USERS: ["id", "name", "pin", "role", "active"],
+  IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
 };
 
-export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS"];
+export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN"];

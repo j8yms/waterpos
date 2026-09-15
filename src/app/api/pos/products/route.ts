@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth";
 import { getSheets, readTab, rowToProduct, seedInitialData, SheetsConfigError } from "@/lib/sheets";
+import { DEFAULT_PRODUCTS } from "@/lib/config";
 
 export const runtime = "nodejs";
 
@@ -7,24 +8,26 @@ export async function GET(request: Request) {
   const user = requireRole(request, "management");
   if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
 
+  const fallbackColors = ["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#14b8a6", "#ec4899", "#f43f5e", "#eab308"];
+
   try {
     await seedInitialData();
     const read = await readTab("PRODUCTS");
     const base = read.rows.map(rowToProduct);
-    const fallbackColors = ["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#14b8a6", "#ec4899", "#f43f5e", "#eab308"];
     const products = base.map((p, i) => ({
       ...p,
       color: p.color || fallbackColors[i % fallbackColors.length],
     }));
     return Response.json({ products });
   } catch (err) {
-    return Response.json({ error: errorMessage(err) }, { status: 500 });
+    // Sheets unavailable/misconfigured: serve the offline seed catalog so the
+    // tile matrix keeps working. This is the same catalog Restock consumes.
+    const products = DEFAULT_PRODUCTS.map((p, i) => ({
+      ...p,
+      color: p.color || fallbackColors[i % fallbackColors.length],
+    }));
+    return Response.json({ products, fromCache: true });
   }
-}
-
-function errorMessage(err: unknown): string {
-  if (err instanceof SheetsConfigError) return err.message;
-  return err instanceof Error ? err.message : "Failed to load products.";
 }
 
 export async function POST(request: Request) {
@@ -58,6 +61,9 @@ export async function POST(request: Request) {
     });
     return Response.json({ ok: true, id });
   } catch (err) {
-    return Response.json({ error: errorMessage(err) }, { status: 500 });
+    return Response.json(
+      { error: err instanceof SheetsConfigError ? err.message : err instanceof Error ? err.message : "Failed to create product." },
+      { status: 500 }
+    );
   }
 }

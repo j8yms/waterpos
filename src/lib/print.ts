@@ -176,7 +176,7 @@ export function receiptFromOrder(
   ];
 
   return {
-    businessName: opts.businessName || "QUENCHERS WATER",
+    businessName: opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
     orderId: order.id,
     date: order.date,
     time: order.time,

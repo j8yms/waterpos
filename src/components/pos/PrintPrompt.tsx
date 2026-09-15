@@ -8,6 +8,8 @@ import type { DispatchOrder, EtimsItem } from "@/lib/types";
 export interface PrintPromptProps {
   order: DispatchOrder;
   items?: EtimsItem[];
+  initialEtimsOn?: boolean;
+  initialKraPin?: string;
   onEtimsRegister?: (kraPin: string) => Promise<DispatchOrder>;
   onPrint: (order: DispatchOrder) => void;
   onClose: () => void;
@@ -22,12 +24,14 @@ export interface PrintPromptProps {
 export default function PrintPrompt({
   order,
   items,
+  initialEtimsOn = false,
+  initialKraPin = "",
   onEtimsRegister,
   onPrint,
   onClose,
 }: PrintPromptProps) {
-  const [etimsOn, setEtimsOn] = useState(false);
-  const [kraPin, setKraPin] = useState("");
+  const [etimsOn, setEtimsOn] = useState(initialEtimsOn);
+  const [kraPin, setKraPin] = useState(initialKraPin);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 

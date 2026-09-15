@@ -41,7 +41,7 @@ async function buildAuth() {
     });
   }
 
-  const inlineJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const inlineJson = process.env.GOOGLE_CREDENTIALS || process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (inlineJson) {
     let parsed: Record<string, any>;
     try {
@@ -71,7 +71,7 @@ async function buildAuth() {
   }
 
   throw new SheetsConfigError(
-    "No Google credentials found. Set GOOGLE_APPLICATION_CREDENTIALS (path to service account JSON) or GOOGLE_SERVICE_ACCOUNT_JSON. See README."
+    "No Google credentials found. Set GOOGLE_CREDENTIALS (service account JSON block) or GOOGLE_APPLICATION_CREDENTIALS (path to service-account.json). See README."
   );
 }
 

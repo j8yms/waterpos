@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quenchers Water · POS",
-  description: "Bulk water delivery POS with M-Pesa auto-sync",
+  title: "MIST Water And Gas Distributors · POS",
+  description: "Water and gas distribution POS with M-Pesa auto-sync",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

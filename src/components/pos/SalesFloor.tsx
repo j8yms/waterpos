@@ -26,6 +26,8 @@ export default function SalesFloor() {
   const [charging, setCharging] = useState(false);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
   const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
+  const [etimsOn, setEtimsOn] = useState(false);
+  const [kraPin, setKraPin] = useState("");
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [refreshedAt, setRefreshedAt] = useState(0);
@@ -157,7 +159,7 @@ export default function SalesFloor() {
             W
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-black leading-tight truncate">QUENCHERS WATER</div>
+            <div className="font-black leading-tight truncate">MIST WATER AND GAS DISTRIBUTORS</div>
             <div className="text-[11px] text-slate-400 leading-tight">Sales Dispatch · {today}</div>
           </div>
           <nav className="hidden sm:flex items-center gap-1 text-sm">
@@ -234,6 +236,10 @@ export default function SalesFloor() {
               drivers={drivers}
               onCharge={charge}
               charging={charging}
+              etimsOn={etimsOn}
+              setEtimsOn={setEtimsOn}
+              kraPin={kraPin}
+              setKraPin={setKraPin}
             />
           </div>
         </section>
@@ -295,6 +301,8 @@ export default function SalesFloor() {
         <PrintPrompt
           order={savedOrder}
           items={savedItems}
+          initialEtimsOn={etimsOn}
+          initialKraPin={kraPin}
           onEtimsRegister={async (kraPin: string) => {
             const res = await api<{ ok: boolean; order: DispatchOrder }>(
               "/api/etims/register",
