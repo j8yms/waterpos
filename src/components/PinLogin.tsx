@@ -44,22 +44,25 @@ export default function PinLogin() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/login", {
+      const { api } = await import("@/lib/client");
+      const data = await api<import("@/lib/types").AuthSession>("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: { pin },
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Invalid PIN.");
+      if (!data || !data.user) {
+        setError("Invalid PIN.");
         setPin("");
         setLoading(false);
         return;
       }
       saveAuth(data);
       router.replace(data.user.role === "rider" ? "/queue" : "/pos");
-    } catch {
-      setError("Cannot reach the local server. Is it running?");
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Login failed. Check server logs."
+      );
       setPin("");
     } finally {
       setLoading(false);

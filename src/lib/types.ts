@@ -60,6 +60,9 @@ export interface DispatchOrder {
   mpesa_code: string;
   notes: string;
   created_at: string;
+  etims_num?: string;
+  cu_serial?: string;
+  etims_url?: string;
 }
 
 export type OrderRow = DispatchOrder & {
@@ -68,6 +71,24 @@ export type OrderRow = DispatchOrder & {
 
 export interface TicketItem extends CartItem {
   cost?: number;
+}
+
+export interface EtimsItem {
+  name: string;
+  qty: number;
+  unitPrice: number;
+}
+
+export interface EtimsResult {
+  invoiceNumber: string;
+  cuSerialNumber: string;
+  verificationUrl: string;
+}
+
+export interface VatSplits {
+  gross: number;
+  net: number;
+  vat: number;
 }
 
 export interface ParsedMpesa {

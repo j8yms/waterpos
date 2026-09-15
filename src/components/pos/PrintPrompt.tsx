@@ -1,71 +1,126 @@
 "use client";
 
-import { money } from "@/lib/pricing";
-import type { DispatchOrder } from "@/lib/types";
+import { useState } from "react";
 
+import { money } from "@/lib/pricing";
+import type { DispatchOrder, EtimsItem } from "@/lib/types";
+
+export interface PrintPromptProps {
+  order: DispatchOrder;
+  items?: EtimsItem[];
+  onEtimsRegister?: (kraPin: string) => Promise<DispatchOrder>;
+  onPrint: (order: DispatchOrder) => void;
+  onClose: () => void;
+}
+
+/**
+ * Pre-print confirmation. When the order has not yet been entered in KRA
+ * eTIMS, the operator can flip the fiscal toggle on, type the customer's KRA
+ * PINlint, and we register the invoice first — then print the receipt with the
+ * fiscal footer + verification QR. Busy/error are explicit; nothing is silent.
+ */
 export default function PrintPrompt({
   order,
+  items,
+  onEtimsRegister,
   onPrint,
   onClose,
-}: {
-  order: DispatchOrder;
-  onPrint: () => void;
-  onClose: () => void;
-}) {
+}: PrintPromptProps) {
+  const [etimsOn, setEtimsOn] = useState(false);
+  const [kraPin, setKraPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const wantsEtims = etimsOn && !order.etims_num && !!onEtimsRegister;
+  const hasItems = !!items && items.length > 0;
+  const alreadyRegistered = !!order.etims_num;
+  const canGo = busy ? false : alreadyRegistered ? true : wantsEtims ? hasItems && !!kraPin.trim() : true;
+
+  async function doPrint() {
+    setErr("");
+    if (busy) return;
+    if (order.etims_num) {
+      onPrint(order);
+      return;
+    }
+    if (!wantsEtims) {
+      onPrint(order);
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await onEtimsRegister(kraPin.trim());
+      onPrint(updated);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "eTIMS registration failed");
+      setBusy(false);
+    }
+  }
+
+  const statusText = order.etims_num
+    ? `eTIMS INV #${order.etims_num}`
+    : "Not yet eTIMS registered";
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-5 shadow-2xl">
-        <div className="text-center">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl">
-            ✅
-          </div>
-          <h2 className="mt-3 text-lg font-black text-emerald-300">DISPATCH SAVED</h2>
-          <p className="text-sm text-slate-400 mt-1">Order {order.id}</p>
-        </div>
-
-        <div className="mt-4 rounded-2xl bg-slate-950 border border-slate-800 p-3 text-sm space-y-1">
-          <div className="flex justify-between">
-            <span className="text-slate-400">Customer</span>
-            <span className="font-bold text-slate-100 truncate ml-3">{order.customer}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Item</span>
-            <span className="font-bold text-slate-100 truncate ml-3">{order.product}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Payment</span>
-            <span
-              className={`font-black ${
-                order.pay_status === "PAID" ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
-              {order.pay_status}
-            </span>
-          </div>
-          <div className="flex justify-between border-t border-slate-800 pt-1.5 text-base">
-            <span className="font-black">Total</span>
-            <span className="font-black text-sky-300">{money(order.total)}</span>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <button
-            onClick={onPrint}
-            className="h-16 rounded-2xl bg-gradient-to-r from-sky-500 to-emerald-500 text-white font-black text-base shadow-lg shadow-sky-900/40 transition active:scale-[0.97]"
-          >
-            🖨️ PRINT RECEIPT
-          </button>
-          <button
-            onClick={onClose}
-            className="h-16 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-base transition active:scale-[0.97]"
-          >
-            ❌ SKIP PRINTING
-          </button>
-        </div>
-
-        <p className="text-center text-[11px] text-slate-500 mt-3">
-          M-Pesa reference will auto-print at the top when matched.
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <span className="chip" data-state={order.etims_num ? "ok" : "warn"}>
+          {statusText}
+        </span>
+        <h2>Print receipt</h2>
+        <p className="muted">
+          Order <strong>#{order.id}</strong> — {order.customer}
         </p>
+
+        {!order.etims_num && (
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={etimsOn}
+              onChange={(e) => setEtimsOn(e.target.checked)}
+            />
+            <span>KRA eTIMS fiscal receipt (VAT 16%)</span>
+          </label>
+        )}
+
+        {wantsEtims && !hasItems && (
+          <p className="warn">
+            No line items found — KRA requires a per-item breakdown. Add items
+            before registering.
+          </p>
+        )}
+
+        {wantsEtims && (
+          <label className="field">
+            <span>Customer KRA PIN</span>
+            <input
+              value={kraPin}
+              onChange={(e) => setKraPin(e.target.value.toUpperCase())}
+              placeholder="e.g. A012345678P"
+              maxLength={14}
+              autoFocus
+            />
+          </label>
+        )}
+
+        {err && <p className="error">{err}</p>}
+
+        <div className="actions">
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={doPrint}
+            disabled={!canGo}
+          >
+            {busy
+              ? "Registering…"
+              : wantsEtims
+                ? "Register & print"
+                : "Print receipt"}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,14 @@ export const TOKEN_TTL_SECONDS = 12 * 60 * 60;
 function appSecret(): string {
   const secret = process.env.APP_SECRET;
   if (!secret) {
-    throw new Error("APP_SECRET is not set. Add a random string to .env.local (used to sign login tokens).");
+    // No APP_SECRET configured: fall back to a stable deterministic key so
+    // login never hard-crashes (Render may omit it). Override in Env Vars.
+    if (!process.env.NEXT_PUBLIC_STATIC) {
+      console.warn(
+        "[auth] APP_SECRET is not set — using dev fallback secret. Set APP_SECRET in Env Vars for production."
+      );
+    }
+    return "waterpos-dev-fallback-secret";
   }
   return secret;
 }

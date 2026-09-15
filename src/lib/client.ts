@@ -122,6 +122,22 @@ export async function api<T = any>(
   url: string,
   options: { method?: string; body?: unknown; silent?: boolean } = {}
 ): Promise<T> {
+  /* ── static / GitHub Pages mode: route to JSON store, no server needed ── */
+  if (
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_STATIC === "true"
+  ) {
+    try {
+      const { staticApiRoute } = await import("./store");
+      return staticApiRoute<T>(url, { method: options.method, body: options.body });
+    } catch (err) {
+      throw new Error(
+        "Static mode store import failed: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
+  }
+
   const session = loadAuth();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

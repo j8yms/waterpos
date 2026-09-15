@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cacheCustomers, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
-import type { CartItem, DashboardSummary, DispatchOrder, Product } from "@/lib/types";
+import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
 import { money, nairobiDate } from "@/lib/pricing";
 import SalesTicket from "./SalesTicket";
 import PrintPrompt from "./PrintPrompt";
@@ -25,6 +25,7 @@ export default function SalesFloor() {
   const [driver, setDriver] = useState("");
   const [charging, setCharging] = useState(false);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
+  const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [refreshedAt, setRefreshedAt] = useState(0);
@@ -121,6 +122,9 @@ export default function SalesFloor() {
         body,
       });
       setSavedOrder(res.order);
+      setSavedItems(
+        cart.map((it) => ({ name: it.name, qty: it.qty, unitPrice: it.unitPrice }))
+      );
       setCart([]);
       setCustomer({ location: "", phone: "", address: "" });
       setRefreshedAt(Date.now());
@@ -290,6 +294,16 @@ export default function SalesFloor() {
       {savedOrder && (
         <PrintPrompt
           order={savedOrder}
+          items={savedItems}
+          onEtimsRegister={async (kraPin: string) => {
+            const res = await api<{ ok: boolean; order: DispatchOrder }>(
+              "/api/etims/register",
+              { method: "POST", body: { orderId: savedOrder.id, items: savedItems, kraPin } }
+            );
+            const updated = res.order;
+            setSavedOrder(updated);
+            return updated;
+          }}
           onPrint={doPrint}
           onClose={() => setSavedOrder(null)}
         />

@@ -2,6 +2,8 @@ import type { Product, Role } from "./types";
 
 export const NAIROBI_TZ = "Africa/Nairobi";
 export const GLOVO_COMMISSION = 0.2;
+export const VAT_RATE = 0.16; // KRA VAT charged on the gross sale amount
+export const TAX_CODE = "B"; // KRA item tax type: B = regular VAT
 
 export const DEFAULT_PINS: Record<string, string> = {
   VINNIE: process.env.PIN_VINNIE || "2486",
@@ -60,6 +62,9 @@ export const TABS: Record<string, string[]> = {
     "profit",
     "mpesa_code",
     "notes",
+    "etims_num",
+    "cu_serial",
+    "etims_url",
     "created_at",
   ],
   USERS: ["id", "name", "pin", "role", "active"],

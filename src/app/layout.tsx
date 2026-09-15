@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "Bulk water delivery POS with M-Pesa auto-sync",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
