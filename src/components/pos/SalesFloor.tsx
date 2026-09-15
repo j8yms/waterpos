@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cacheCustomers, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
-import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
+import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, PaymentMethod, Product } from "@/lib/types";
 import { money, nairobiDate, computeTicket } from "@/lib/pricing";
-import SalesTicket from "./SalesTicket";
+import ProductSearch from "./ProductSearch";
+import CustomerSearch from "./CustomerSearch";
+import TransactionTable from "./TransactionTable";
+import CommandMatrix from "./CommandMatrix";
 import PrintPrompt from "./PrintPrompt";
 import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
@@ -18,13 +21,14 @@ export default function SalesFloor() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [drivers, setDrivers] = useState<{ id: string; name: string; role: string }[]>([]);
-  const [filter, setFilter] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [glovo, setGlovo] = useState(false);
   const [customer, setCustomer] = useState({ location: "", phone: "", address: "" });
   const [driver, setDriver] = useState("");
   const [charging, setCharging] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutMethod, setCheckoutMethod] = useState<PaymentMethod | null>(null);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
   const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
   const [etimsOn, setEtimsOn] = useState(false);
@@ -92,20 +96,13 @@ export default function SalesFloor() {
     loadSummary();
   }, [refreshedAt, loadSummary]);
 
-  const visible = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    const list = products.filter((p) => p.is_active || q);
-    if (!q) return list.filter((p) => p.is_active);
-    return list.filter((p) => p.name.toLowerCase().includes(q));
-  }, [products, filter]);
-
   function addToCart(product: Product) {
     setCart((list) => {
       const existing = list.find((it) => it.productId === product.id);
       if (existing) {
         return list.map((it) => (it.productId === product.id ? { ...it, qty: it.qty + 1 } : it));
       }
-      return [
+      const next = [
         ...list,
         {
           productId: product.id,
@@ -115,7 +112,30 @@ export default function SalesFloor() {
           color: product.color,
         },
       ];
+      return next;
     });
+  }
+
+  function deleteLine() {
+    setCart((list) => {
+      const target = selected ?? list[list.length - 1]?.productId ?? null;
+      if (!target) return list;
+      setSelected((s) => (s === target ? null : s));
+      return list.filter((it) => it.productId !== target);
+    });
+  }
+
+  function voidOrder() {
+    setCart([]);
+    setSelected(null);
+  }
+
+  function openCheckout(method: PaymentMethod | null) {
+    if (!cart.length) return;
+    setCheckoutMethod(method);
+    if (method === "GLOVO") setGlovo(true);
+    else if (method && glovo) setGlovo(false);
+    setCheckoutOpen(true);
   }
 
   async function charge(payment: {
@@ -152,6 +172,7 @@ export default function SalesFloor() {
         cart.map((it) => ({ name: it.name, qty: it.qty, unitPrice: it.unitPrice }))
       );
       setCart([]);
+      setSelected(null);
       setCustomer({ location: "", phone: "", address: "" });
       setDriver("");
       setCheckoutOpen(false);
@@ -176,11 +197,12 @@ export default function SalesFloor() {
   }
 
   const today = nairobiDate();
+  const isAdmin = me?.role === "management";
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-3 py-2">
+      <header className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-3 pt-2">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-sm font-black text-white shrink-0">
             W
@@ -199,7 +221,7 @@ export default function SalesFloor() {
             <Link href="/customers" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Customers
             </Link>
-            {me?.role !== "rider" && (
+            {isAdmin && (
               <Link href="/reports" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
                 Reports
               </Link>
@@ -227,12 +249,36 @@ export default function SalesFloor() {
           <Link href="/customers" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
             Customers
           </Link>
-          {me?.role !== "rider" && (
+          {isAdmin && (
             <Link href="/reports" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Reports
             </Link>
           )}
         </nav>
+
+        {/* Top horizontal search banner (Aronium product search location) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_220px] gap-2 mt-2 pb-2 items-start">
+          <ProductSearch products={products} onAdd={addToCart} />
+          <CustomerSearch value={customer} onChange={setCustomer} />
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">
+              Assign Rider
+            </label>
+            <select
+              value={driver}
+              onChange={(e) => setDriver(e.target.value)}
+              className="w-full h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+            >
+              <option value="">Select rider…</option>
+              {drivers.map((d) => (
+                <option key={d.id} value={d.name}>
+                  {d.name}
+                </option>
+              ))}
+              <option value="WALK-IN">WALK-IN (no rider)</option>
+            </select>
+          </div>
+        </div>
       </header>
 
       {/* Financial strip */}
@@ -240,7 +286,11 @@ export default function SalesFloor() {
         <section className="px-3 pt-3 overflow-x-auto">
           <div className="flex gap-2 min-w-max">
             <StatCard label="Total Sales" value={money(summary.totalSales)} accent="text-emerald-400" />
-            <StatCard label="Profit" value={money(summary.totalProfit)} accent="text-sky-400" />
+            {isAdmin ? (
+              <StatCard label="Profit" value={money(summary.totalProfit)} accent="text-sky-400" />
+            ) : (
+              <StatCard label="Dispatches" value={`${summary.ordersCount}`} accent="text-sky-400" />
+            )}
             <StatCard label="Expenditure" value={money(summary.totalCost)} accent="text-rose-400" />
             <StatCard label="Glovo Comm" value={money(summary.glovoCommission)} accent="text-amber-400" />
             <StatCard label="Open" value={`${summary.pendingCount} pending`} accent="text-rose-300" />
@@ -254,136 +304,81 @@ export default function SalesFloor() {
         </div>
       )}
 
-      {/* Body */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-3 p-3">
-        {/* Left sidebar: LIVE TICKET + Today's Sales feed */}
-        <section className="lg:order-1 order-2 flex flex-col gap-3 min-h-0 lg:max-h-[calc(100vh-160px)]">
-          {/* LIVE TICKET */}
-          <div className="h-[62vh] lg:h-auto lg:flex-1 lg:min-h-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 p-3">
-            <SalesTicket
+      {/* Aronium split-screen body: 60% transaction table / 40% command matrix */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 p-3">
+        <div className="flex flex-col min-h-0 gap-3 lg:h-[calc(100vh-280px)]">
+          <div className="flex-1 min-h-0">
+            <TransactionTable
               items={cart}
               setItems={setCart}
-              glovo={glovo}
-              customer={customer}
-              setCustomer={setCustomer}
-              driver={driver}
-              setDriver={setDriver}
-              drivers={drivers}
-              onCheckout={() => setCheckoutOpen(true)}
+              selected={selected}
+              onSelect={setSelected}
             />
           </div>
 
-        {/* Today's Sales */}
-        <div className="h-[34vh] lg:h-[30vh] lg:max-h-[300px] shrink-0 flex flex-col min-h-0 rounded-2xl border border-slate-800 bg-slate-950 p-3">
-          <h2 className="text-xs uppercase tracking-wider text-slate-400 font-black mb-2">
-            Today's Sales · {today}
-          </h2>
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
-            {todayOrders.length === 0 && (
-              <div className="text-center text-slate-600 text-sm py-6">
-                No dispatches yet today.
-              </div>
-            )}
-            {todayOrders.map((o) => (
-              <div
-                key={o.id}
-                className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-slate-900 border border-slate-800"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-slate-100 truncate leading-tight">
-                    {o.customer}
-                  </div>
-                  <div className="text-[11px] text-slate-400 truncate">
-                    {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
-                  </div>
+          {/* Today's Sales feed */}
+          <div className="h-44 shrink-0 flex flex-col min-h-0 rounded-2xl border border-slate-800 bg-slate-950 p-3">
+            <h2 className="text-xs uppercase tracking-wider text-slate-400 font-black mb-2">
+              Today's Sales · {today}
+            </h2>
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
+              {todayOrders.length === 0 && (
+                <div className="text-center text-slate-600 text-sm py-4">
+                  No dispatches yet today.
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-black text-emerald-400">{money(o.total)}</div>
-                  {me?.role !== "rider" && (
-                    <div className="text-[11px] text-slate-500 font-bold">
-                      +{money(o.profit)} profit
+              )}
+              {todayOrders.map((o) => (
+                <div
+                  key={o.id}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-slate-100 truncate leading-tight">
+                      {o.customer}
                     </div>
-                  )}
+                    <div className="text-[11px] text-slate-400 truncate">
+                      {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-black text-emerald-400">{money(o.total)}</div>
+                    {isAdmin && (
+                      <div className="text-[11px] text-slate-500 font-bold">
+                        +{money(o.profit)} profit
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          {todayOrders.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-800 rounded-2xl bg-slate-900 p-3 space-y-1">
-              <div className="flex justify-between items-baseline">
+              ))}
+            </div>
+            {todayOrders.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-slate-800 flex items-baseline justify-between">
                 <span className="text-xs uppercase tracking-wider text-slate-400 font-black">
-                  Today's Total Gross Sales (Ksh)
+                  Today's Gross Sales
                 </span>
                 <span className="text-lg font-black text-emerald-400">
                   {money(todayOrders.reduce((s, o) => s + o.total, 0))}
                 </span>
               </div>
-              {me?.role !== "rider" && (
-                <div className="flex justify-between items-baseline">
-                  <span className="text-xs uppercase tracking-wider text-slate-400 font-black">
-                    Today's Total Profit
-                  </span>
-                  <span className="text-lg font-black text-sky-400">
-                    {money(todayOrders.reduce((s, o) => s + o.profit, 0))}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-          </div>
-        </section>
-
-        {/* Product grid */}
-        <section className="lg:order-2 order-1 flex flex-col min-h-0">
-          <div className="flex gap-2 mb-2">
-            <input
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Search products…"
-              className="flex-1 h-11 px-3 rounded-xl bg-slate-900 border border-slate-800 focus:border-sky-500 outline-none text-slate-100"
-            />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5 overflow-y-auto pr-1 pb-2">
-            {visible.map((p) => {
-              const inCart = cart.find((it) => it.productId === p.id)?.qty ?? 0;
-              const low = p.stock <= 10 && p.stock > 0;
-              const out = p.stock <= 0;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => !out && addToCart(p)}
-                  disabled={out}
-                  style={{ backgroundColor: p.color }}
-                  className={`relative rounded-2xl p-3 text-left text-white shadow-lg transition active:scale-[0.96] min-h-[104px] flex flex-col justify-between ${
-                    out ? "opacity-40 saturate-0" : "hover:brightness-110"
-                  }`}
-                >
-                  {inCart > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-slate-900 text-sky-300 border border-sky-400 text-xs font-black rounded-full w-6 h-6 flex items-center justify-center">
-                      {inCart}
-                    </span>
-                  )}
-                  <div>
-                    <div className="text-sm font-black leading-tight drop-shadow">{p.name}</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-black drop-shadow">{money(p.selling_price)}</div>
-                    <div
-                      className={`text-[11px] font-black mt-0.5 ${
-                        out ? "text-white/80" : low ? "bg-black/40 rounded px-1 inline-block" : "text-white/80"
-                      }`}
-                    >
-                      {out ? "OUT OF STOCK" : `${p.stock} ${p.unit} left`}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-            {visible.length === 0 && (
-              <div className="col-span-full text-center text-slate-600 py-10 text-sm">No products found.</div>
             )}
           </div>
-        </section>
+        </div>
+
+        <CommandMatrix
+          hasItems={cart.length > 0}
+          selected={selected}
+          onPayment={() => openCheckout(null)}
+          onCash={() => openCheckout("CASH")}
+          onMpesa={() => openCheckout("MPESA")}
+          onGlovo={() => openCheckout("GLOVO")}
+          onDelete={deleteLine}
+          onVoid={voidOrder}
+          etimsOn={etimsOn}
+          setEtimsOn={setEtimsOn}
+          kraPin={kraPin}
+          setKraPin={setKraPin}
+          showAdmin={isAdmin}
+        />
       </div>
 
       {checkoutOpen && (
@@ -399,6 +394,7 @@ export default function SalesFloor() {
           setEtimsOn={setEtimsOn}
           kraPin={kraPin}
           setKraPin={setKraPin}
+          initialMethod={checkoutMethod}
         />
       )}
 

@@ -19,6 +19,7 @@ export default function CheckoutModal({
   setEtimsOn,
   kraPin,
   setKraPin,
+  initialMethod = null,
 }: {
   open: boolean;
   onClose: () => void;
@@ -36,6 +37,7 @@ export default function CheckoutModal({
   setEtimsOn: (v: boolean) => void;
   kraPin: string;
   setKraPin: (v: string) => void;
+  initialMethod?: PaymentMethod | null;
 }) {
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [tendered, setTendered] = useState("");
@@ -43,11 +45,11 @@ export default function CheckoutModal({
 
   useEffect(() => {
     if (open) {
-      setMethod(null);
+      setMethod(initialMethod);
       setTendered("");
       setMpesaCode("");
     }
-  }, [open]);
+  }, [open, initialMethod]);
 
   if (!open) return null;
 

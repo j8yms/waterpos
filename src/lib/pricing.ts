@@ -1,5 +1,5 @@
-import { GLOVO_COMMISSION } from "./config";
-import type { DispatchOrder, TicketItem } from "./types";
+import { GLOVO_COMMISSION, VAT_RATE } from "./config";
+import type { DispatchOrder, TicketItem, VatSplits } from "./types";
 import { toNumber } from "./numbers";
 
 export interface TicketTotals {
@@ -27,6 +27,14 @@ export function computeTicket(items: TicketItem[], glovo: boolean): TicketTotals
 
 export function money(n: number): string {
   return `Ksh ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** VAT-inclusive price split: total = net + 16% VAT (Kenya). */
+export function splitVat(total: number): VatSplits {
+  const gross = Math.round(total * 100) / 100;
+  const vat = Math.round((gross * VAT_RATE) / (1 + VAT_RATE) * 100) / 100;
+  const net = Math.round((gross - vat) * 100) / 100;
+  return { gross, net, vat };
 }
 
 export function nairobiDate(time: Date = new Date()): string {
