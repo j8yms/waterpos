@@ -162,6 +162,7 @@ export function createOrder(body: {
   total?: number;
   glovo?: boolean;
   pay_status?: "PAID" | "PENDING";
+  payment_method?: "CASH" | "MPESA" | "GLOVO" | "";
   mpesa_code?: string;
   driver?: string;
   profit?: number;
@@ -181,6 +182,7 @@ export function createOrder(body: {
     total: body.total ?? (body.qty ?? 0) * (body.unit_price ?? 0),
     glovo: !!body.glovo,
     pay_status: body.pay_status ?? "PENDING",
+    payment_method: body.payment_method ?? "",
     mpesa_code: body.mpesa_code ?? "",
     driver: body.driver ?? "",
     profit: body.profit ?? 0,

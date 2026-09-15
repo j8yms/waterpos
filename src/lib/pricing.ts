@@ -139,6 +139,7 @@ export function orderSummaryPublic(order: DispatchOrder) {
     unit_price: order.unit_price,
     total: order.total,
     pay_status: order.pay_status,
+    payment_method: order.payment_method,
     driver: order.driver,
     mpesa_code: order.mpesa_code,
   };

@@ -133,6 +133,28 @@ export async function ensureSpreadsheetStructure(): Promise<void> {
       });
     }
   }
+
+  // Reconcile: append any missing headers to the end of row 1 (keeps existing rows aligned).
+  for (const tab of SEED_TABS) {
+    const desired = TABS[tab] ?? [];
+    if (!desired.length) continue;
+    const read = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${tab}!A1:ZZ1`,
+    });
+    const existing = (read.data.values?.[0] ?? []).map((c) => normalizeHeader(String(c)));
+    const missing = desired.filter((h) => !existing.includes(normalizeHeader(h)));
+    if (missing.length) {
+      const startCol = columnName(existing.length + 1);
+      const endCol = columnName(existing.length + missing.length);
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${tab}!${startCol}1:${endCol}1`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [missing] },
+      });
+    }
+  }
 }
 
 export function columnName(index: number): string {
@@ -369,6 +391,7 @@ export function rowToOrder(r: Record<string, any>, rowNumber: number): DispatchO
     etims_url: String(r.etims_url ?? ""),
     notes: String(r.notes ?? ""),
     created_at: String(r.created_at ?? ""),
+    payment_method: String(r.payment_method ?? ""),
     _row: rowNumber,
   } as DispatchOrder & { _row: number };
 }

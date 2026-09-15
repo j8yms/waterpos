@@ -23,6 +23,7 @@ export interface ReceiptData {
   glovoFee: number;
   total: number;
   payStatus: "PAID" | "PENDING";
+  paymentMethod?: string;
   mpesaCode?: string;
   operator: string;
 }
@@ -66,6 +67,16 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
     : "";
 
   const status = data.payStatus === "PAID" ? "PAID" : "PENDING";
+  const paymentLabel = data.paymentMethod
+    ? data.paymentMethod === "MPESA"
+      ? "M-PESA"
+      : data.paymentMethod === "GLOVO"
+        ? "GLOVO ORDER"
+        : "CASH"
+    : null;
+  const paymentLine = paymentLabel
+    ? `<pre>${p("METHOD")} ${paymentLabel}</pre>`
+    : "";
 
   return `<!DOCTYPE html>
 <html>
@@ -115,6 +126,7 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
     <pre class="big">${p("TOTAL")} ${data.total.toFixed(2).padStart(12)}</pre>
     ${glovoLine}
     <pre>${p("PAYMENT")} ${status}</pre>
+    ${paymentLine}
     <pre class="sep">${rule}</pre>
     <pre>${p("DRIVER: " + data.driver)}</pre>
     <pre>${p("OPERATOR: " + data.operator)}</pre>
@@ -190,6 +202,7 @@ export function receiptFromOrder(
     glovoFee: order.glovo ? order.total * GLOVO_COMMISSION : 0,
     total: order.total,
     payStatus: order.pay_status === "PAID" ? "PAID" : "PENDING",
+    paymentMethod: order.payment_method || undefined,
     mpesaCode: order.mpesa_code || undefined,
     operator: opts.operator,
   };

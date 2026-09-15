@@ -42,6 +42,8 @@ export interface CartItem {
 
 export type PayStatus = "PAID" | "PENDING";
 
+export type PaymentMethod = "CASH" | "MPESA" | "GLOVO";
+
 export interface DispatchOrder {
   id: string;
   date: string;
@@ -55,6 +57,7 @@ export interface DispatchOrder {
   total: number;
   glovo: boolean;
   pay_status: PayStatus;
+  payment_method: PaymentMethod | "";
   driver: string;
   profit: number;
   mpesa_code: string;

@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cacheCustomers, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
 import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
-import { money, nairobiDate } from "@/lib/pricing";
+import { money, nairobiDate, computeTicket } from "@/lib/pricing";
 import SalesTicket from "./SalesTicket";
 import PrintPrompt from "./PrintPrompt";
+import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
 import { printReceipt, receiptFromOrder } from "@/lib/print";
 
@@ -20,10 +21,10 @@ export default function SalesFloor() {
   const [filter, setFilter] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [glovo, setGlovo] = useState(false);
-  const [payStatus, setPayStatus] = useState<"PAID" | "PENDING">("PENDING");
   const [customer, setCustomer] = useState({ location: "", phone: "", address: "" });
   const [driver, setDriver] = useState("");
   const [charging, setCharging] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
   const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
   const [etimsOn, setEtimsOn] = useState(false);
@@ -117,16 +118,28 @@ export default function SalesFloor() {
     });
   }
 
-  async function charge() {
+  async function charge(payment: {
+    paymentMethod: "CASH" | "MPESA" | "GLOVO";
+    tendered: number;
+    change: number;
+    mpesaCode: string;
+  }) {
     if (!cart.length || !driver) return;
     setCharging(true);
     setErr(null);
+    const payStatus: "PAID" | "PENDING" =
+      payment.paymentMethod === "GLOVO" ? "PENDING" : "PAID";
+    const glovoFlag = payment.paymentMethod === "GLOVO" || glovo;
     try {
       const body = {
         driver,
         customer: customer.location,
-        glovo,
+        glovo: glovoFlag,
+        paymentMethod: payment.paymentMethod,
         payStatus,
+        mpesa_code: payment.mpesaCode || "",
+        tendered: payment.tendered || 0,
+        change: payment.change || 0,
         items: cart.map((it) => ({ productId: it.productId, qty: it.qty })),
         notes: "",
       };
@@ -140,6 +153,8 @@ export default function SalesFloor() {
       );
       setCart([]);
       setCustomer({ location: "", phone: "", address: "" });
+      setDriver("");
+      setCheckoutOpen(false);
       setRefreshedAt(Date.now());
       loadProducts();
       loadTodayOrders();
@@ -249,20 +264,12 @@ export default function SalesFloor() {
               items={cart}
               setItems={setCart}
               glovo={glovo}
-              setGlovo={setGlovo}
-              payStatus={payStatus}
-              setPayStatus={setPayStatus}
               customer={customer}
               setCustomer={setCustomer}
               driver={driver}
               setDriver={setDriver}
               drivers={drivers}
-              onCharge={charge}
-              charging={charging}
-              etimsOn={etimsOn}
-              setEtimsOn={setEtimsOn}
-              kraPin={kraPin}
-              setKraPin={setKraPin}
+              onCheckout={() => setCheckoutOpen(true)}
             />
           </div>
 
@@ -378,6 +385,22 @@ export default function SalesFloor() {
           </div>
         </section>
       </div>
+
+      {checkoutOpen && (
+        <CheckoutModal
+          open={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          onRegister={charge}
+          charging={charging}
+          total={computeTicket(cart, glovo).subtotal}
+          glovo={glovo}
+          setGlovo={setGlovo}
+          etimsOn={etimsOn}
+          setEtimsOn={setEtimsOn}
+          kraPin={kraPin}
+          setKraPin={setKraPin}
+        />
+      )}
 
       {savedOrder && (
         <PrintPrompt

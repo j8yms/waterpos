@@ -77,6 +77,7 @@ export async function GET(request: Request) {
       total: o.total,
       glovo: o.glovo,
       pay_status: o.pay_status,
+      payment_method: o.payment_method,
       driver: o.driver,
       profit: o.profit,
       mpesa_code: o.mpesa_code,
@@ -97,7 +98,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const driver = String(body.driver ?? "").trim();
     const glovo = Boolean(body.glovo);
-    const payStatus = String(body.payStatus ?? body.pay_status ?? "PENDING").toUpperCase() === "PAID" ? "PAID" : "PENDING";
+    const paymentMethodRaw = String(body.paymentMethod ?? "").trim().toUpperCase();
+    const paymentMethod: "CASH" | "MPESA" | "GLOVO" | "" =
+      paymentMethodRaw === "CASH" || paymentMethodRaw === "MPESA" || paymentMethodRaw === "GLOVO"
+        ? paymentMethodRaw
+        : "";
+    // CASH and M-PESA settle instantly; GLOVO orders stay PENDING until Glovo pays out.
+    const payStatus: "PAID" | "PENDING" =
+      paymentMethod === "CASH" || paymentMethod === "MPESA"
+        ? "PAID"
+        : String(body.payStatus ?? body.pay_status ?? "PENDING").toUpperCase() === "PAID"
+          ? "PAID"
+          : "PENDING";
     const notes = String(body.notes ?? "");
     const requested = Array.isArray(body.items) ? body.items : [];
 
@@ -126,7 +138,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const totals = computeTicket(items, glovo);
+    const totals = computeTicket(items, glovo || paymentMethod === "GLOVO");
 
     const customersRead = await readTab("CUSTOMERS");
     const customers = customersRead.rows.map((r) => ({
@@ -149,11 +161,12 @@ export async function POST(request: Request) {
       qty: items.reduce((s, i) => s + i.qty, 0),
       unit_price: items.reduce((s, i) => s + i.unitPrice * i.qty, 0) / Math.max(1, items.reduce((s, i) => s + i.qty, 0)),
       total: Math.round(totals.subtotal * 100) / 100,
-      glovo,
-      pay_status: payStatus,
+      glovo: glovo || paymentMethod === "GLOVO",
+      pay_status: paymentMethod === "GLOVO" ? "PENDING" : payStatus,
+      payment_method: paymentMethod,
       driver,
       profit: Math.round(totals.finalProfit * 100) / 100,
-      mpesa_code: "",
+      mpesa_code: String(body.mpesa_code ?? body.mpesaCode ?? ""),
       notes,
       created_at: new Date().toISOString(),
     };

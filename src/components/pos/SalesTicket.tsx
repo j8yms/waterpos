@@ -3,44 +3,28 @@
 import type { CartItem } from "@/lib/types";
 import { computeTicket, money } from "@/lib/pricing";
 import CustomerSearch, { type SelectedCustomer } from "./CustomerSearch";
-import { BigButton, Toggle } from "@/components/ui";
+import { BigButton } from "@/components/ui";
 
 export default function SalesTicket({
   items,
   setItems,
   glovo,
-  setGlovo,
-  payStatus,
-  setPayStatus,
   customer,
   setCustomer,
   driver,
   setDriver,
   drivers,
-  onCharge,
-  charging,
-  etimsOn,
-  setEtimsOn,
-  kraPin,
-  setKraPin,
+  onCheckout,
 }: {
   items: CartItem[];
   setItems: (u: (items: CartItem[]) => CartItem[]) => void;
   glovo: boolean;
-  setGlovo: (v: boolean) => void;
-  payStatus: "PAID" | "PENDING";
-  setPayStatus: (v: "PAID" | "PENDING") => void;
   customer: SelectedCustomer;
   setCustomer: (c: SelectedCustomer) => void;
   driver: string;
   setDriver: (v: string) => void;
   drivers: { id: string; name: string; role: string }[];
-  onCharge: () => void;
-  charging: boolean;
-  etimsOn: boolean;
-  setEtimsOn: (v: boolean) => void;
-  kraPin: string;
-  setKraPin: (v: string) => void;
+  onCheckout: () => void;
 }) {
   const ticket = computeTicket(items, glovo);
 
@@ -60,34 +44,6 @@ export default function SalesTicket({
     <div className="flex flex-col h-full min-h-0">
       <div className="space-y-3">
         <CustomerSearch value={customer} onChange={setCustomer} />
-
-        <div className="grid grid-cols-2 gap-2">
-          <Toggle checked={glovo} onChange={setGlovo} label="GLOVO Order" accent="amber" />
-          <Toggle
-            checked={payStatus === "PAID"}
-            onChange={(v) => setPayStatus(v ? "PAID" : "PENDING")}
-            label={payStatus === "PAID" ? "PAID" : "PENDING"}
-            accent={payStatus === "PAID" ? "emerald" : "rose"}
-          />
-        </div>
-
-        <Toggle checked={etimsOn} onChange={setEtimsOn} label="Generate KRA eTIMS" accent="sky" />
-
-        {etimsOn && (
-          <label className="block">
-            <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
-              Customer KRA PIN
-            </span>
-            <input
-              value={kraPin}
-              onChange={(e) => setKraPin(e.target.value.toUpperCase())}
-              placeholder="e.g. A012345678P"
-              maxLength={14}
-              autoComplete="off"
-              className="w-full h-12 px-3 rounded-xl bg-slate-800 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
-            />
-          </label>
-        )}
 
         <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">
           Assign Rider
@@ -180,26 +136,22 @@ export default function SalesTicket({
               <span className="font-bold text-amber-400">− {money(ticket.glovoFee)}</span>
             </div>
           )}
-          <div className="flex justify-between border-t border-slate-800 pt-1.5 text-base">
-            <span className="font-black text-slate-200">Pay status</span>
-            <span
-              className={`font-black ${payStatus === "PAID" ? "text-emerald-400" : "text-rose-400"}`}
-            >
-              {payStatus}
-            </span>
+          <div className="flex justify-between border-t border-slate-800 pt-1.5">
+            <span className="text-slate-400">Order total</span>
+            <span className="font-black text-emerald-400 text-base">{money(ticket.subtotal)}</span>
           </div>
         </div>
 
         <BigButton
-          onClick={onCharge}
-          disabled={charging || !items.length || !driver}
+          onClick={onCheckout}
+          disabled={!items.length || !driver}
           className={`mt-3 w-full ${
-            charging || !items.length || !driver
+            !items.length || !driver
               ? "bg-slate-800 text-slate-500"
               : "bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-lg shadow-sky-900/30"
           }`}
         >
-          {charging ? "Saving…" : payStatus === "PAID" ? "SAVE & DISPATCH" : "DISPATCH · PENDING"}
+          CHECKOUT & PAY
         </BigButton>
       </div>
     </div>

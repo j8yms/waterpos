@@ -66,6 +66,7 @@ export const TABS: Record<string, string[]> = {
     "cu_serial",
     "etims_url",
     "created_at",
+    "payment_method",
   ],
   USERS: ["id", "name", "pin", "role", "active"],
   IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
