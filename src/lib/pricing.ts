@@ -50,6 +50,57 @@ export function nairobiTime(time: Date = new Date()): string {
   }).format(time);
 }
 
+/**
+ * Normalize any date string a Google Sheet might hold back into the canonical
+ * YYYY-MM-DD key used by nairobiDate(). Sheets users enter dates as text, and
+ * the API returns whatever layout the editor used (e.g. "2026-09-15",
+ * "9/15/2026", "15/09/2026", "15-Sep-2026", "15-sep-26").
+ */
+export function normalizeSheetDate(raw: string, dayFirst?: boolean): string {
+  const s = String(raw ?? "").trim().toLowerCase();
+  if (!s) return "";
+
+  // YYYY-MM-DD or YYYY/MM/DD (already canonical = app-written records).
+  let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+
+  // M/D/YYYY, D/M/YYYY, M-D-YYYY ... (two-digit year tolerated).
+  m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+  if (m) {
+    let a = +m[1];
+    let b = +m[2];
+    let y = +m[3];
+    if (y < 100) y += 2000;
+    const first = a;
+    const second = b;
+    if (dayFirst === undefined) {
+      // Ambiguous text date ("9/15" vs "15/9"): if the first part exceeds 12 it
+      // must be the day; otherwise assume month-first (US Sheets default).
+      dayFirst = first > 12;
+    }
+    const [month, day] = dayFirst ? [second, first] : [first, second];
+    if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+    return `${y}-${pad2(month)}-${pad2(day)}`;
+  }
+
+  // "15-Sep-2026", "September 15, 2026"
+  const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  m = s.match(/(\d{1,2})[-\s]*([a-z]{3,})[a-z]*[-\s,]*(\d{2,4})/);
+  if (m) {
+    const day = +m[1];
+    const mon = monthNames.indexOf(m[2].slice(0, 3)) + 1;
+    let y = +m[3];
+    if (y < 100) y += 2000;
+    if (mon >= 1 && mon <= 12 && day >= 1 && day <= 31) return `${y}-${pad2(mon)}-${pad2(day)}`;
+  }
+
+  return "";
+}
+
+function pad2(n: number | string): string {
+  return String(n).padStart(2, "0");
+}
+
 export function normalizeCustomerName(
   raw: string,
   customers: { location: string; phone: string; address: string }[]

@@ -241,9 +241,10 @@ export default function SalesFloor() {
 
       {/* Body */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-3 p-3">
-        {/* Ticket */}
-        <section className="lg:order-1 order-2 h-[62vh] lg:h-auto lg:max-h-[calc(100vh-160px)] flex flex-col min-h-0">
-          <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 p-3">
+        {/* Left sidebar: LIVE TICKET + Today's Sales feed */}
+        <section className="lg:order-1 order-2 flex flex-col gap-3 min-h-0 lg:max-h-[calc(100vh-160px)]">
+          {/* LIVE TICKET */}
+          <div className="h-[62vh] lg:h-auto lg:flex-1 lg:min-h-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-950 p-3">
             <SalesTicket
               items={cart}
               setItems={setCart}
@@ -264,10 +265,9 @@ export default function SalesFloor() {
               setKraPin={setKraPin}
             />
           </div>
-        </section>
 
         {/* Today's Sales */}
-        <section className="lg:order-1 order-3 flex flex-col min-h-0 rounded-2xl border border-slate-800 bg-slate-950 p-3">
+        <div className="h-[34vh] lg:h-[30vh] lg:max-h-[300px] shrink-0 flex flex-col min-h-0 rounded-2xl border border-slate-800 bg-slate-950 p-3">
           <h2 className="text-xs uppercase tracking-wider text-slate-400 font-black mb-2">
             Today's Sales · {today}
           </h2>
@@ -323,6 +323,7 @@ export default function SalesFloor() {
               )}
             </div>
           )}
+          </div>
         </section>
 
         {/* Product grid */}

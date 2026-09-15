@@ -1,10 +1,24 @@
 import { requireUser } from "@/lib/auth";
 import { readTab, rowToOrder, SheetsConfigError } from "@/lib/sheets";
-import { nairobiDate } from "@/lib/pricing";
+import { nairobiDate, normalizeSheetDate } from "@/lib/pricing";
 import { GLOVO_COMMISSION } from "@/lib/config";
 import type { DashboardSummary } from "@/lib/types";
 
 export const runtime = "nodejs";
+
+/** Read the live sales ledger, preferring ORDERS but falling back to the
+ *  legacy "OUT" tab that earlier spreadsheet versions used as the dispatch log. */
+async function readLedger() {
+  const primary = await readTab("ORDERS");
+  if (primary.rows.length) return primary;
+  try {
+    const legacy = await readTab("OUT");
+    if (legacy.rows.length) return legacy;
+  } catch {
+    /* OUT absent — fall through */
+  }
+  return primary;
+}
 
 export async function GET(request: Request) {
   // Riders get personal stats only (assigned orders), never company financials.
@@ -15,12 +29,13 @@ export async function GET(request: Request) {
   const date = url.searchParams.get("date") || nairobiDate();
 
   try {
-    const read = await readTab("ORDERS");
+    const read = await readLedger();
     const orders = read.rows.map((raw, i) => rowToOrder(raw, read.rowNumbers[i]));
+    const dayKey = normalizeSheetDate(date) || date;
 
     if (user.role === "rider") {
       const mine = orders.filter(
-        (o) => o.date === date && o.driver.trim().toLowerCase() === user.name.trim().toLowerCase()
+        (o) => normalizeSheetDate(o.date) === dayKey && o.driver.trim().toLowerCase() === user.name.trim().toLowerCase()
       );
       return Response.json({
         date,
@@ -31,7 +46,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const day = orders.filter((o) => o.date === date);
+    const day = orders.filter((o) => normalizeSheetDate(o.date) === dayKey);
     const totalSales = day.reduce((s, o) => s + o.total, 0);
     const totalProfit = day.reduce((s, o) => s + o.profit, 0);
     // Recover the raw (pre-commission) profit for Glovo orders to derive real COGS:

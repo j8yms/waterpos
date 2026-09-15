@@ -1,12 +1,26 @@
 import { requireRole, requireUser } from "@/lib/auth";
 import { appendRow, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow } from "@/lib/sheets";
-import { computeTicket, nairobiDate, nairobiTime, normalizeCustomerName, orderSummaryPublic } from "@/lib/pricing";
+import { computeTicket, nairobiDate, nairobiTime, normalizeCustomerName, normalizeSheetDate, orderSummaryPublic } from "@/lib/pricing";
 import { newOrderId } from "@/lib/sync";
 import type { DispatchOrder, TicketItem } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 type OrderWithRow = DispatchOrder & { _row: number };
+
+/** Read the live sales ledger, preferring ORDERS but falling back to the
+ *  legacy "OUT" tab that earlier spreadsheet versions used as the dispatch log. */
+async function readLedger() {
+  const primary = await readTab("ORDERS");
+  if (primary.rows.length) return primary;
+  try {
+    const legacy = await readTab("OUT");
+    if (legacy.rows.length) return legacy;
+  } catch {
+    /* OUT absent — fall through */
+  }
+  return primary;
+}
 
 export async function GET(request: Request) {
   const user = requireUser(request);
@@ -18,15 +32,23 @@ export async function GET(request: Request) {
   const driverParam = url.searchParams.get("driver");
 
   try {
-    const read = await readTab("ORDERS");
+    const read = await readLedger();
     let orders: OrderWithRow[] = [];
     read.rows.forEach((raw, i) => {
       orders.push(rowToOrder(raw, read.rowNumbers[i]) as OrderWithRow);
     });
 
+    // Match the requested day against any date layout the sheet may hold, not
+    // just the exact YYYY-MM-DD string the app writes.
+    const todayKey = month ? "" : normalizeSheetDate(date) || date;
+    const monthKey = month ? normalizeSheetDate(month + "-01")?.slice(0, 7) ?? month : "";
+
     orders = month
-      ? orders.filter((o) => o.date.length >= 7 && o.date.startsWith(month))
-      : orders.filter((o) => o.date === date);
+      ? orders.filter((o) => {
+          const key = normalizeSheetDate(o.date);
+          return key.length >= 7 && key.startsWith(monthKey || month);
+        })
+      : orders.filter((o) => normalizeSheetDate(o.date) === todayKey);
 
     if (user.role === "rider") {
       // Riders only ever see their own queue, and never financials.

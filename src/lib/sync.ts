@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { readTab, rowToOrder, updateRow } from "./sheets";
 import { amountsMatch, parseMpesaSms, extractSmsFromPayload } from "./mpesa";
-import { nairobiDate } from "./pricing";
+import { nairobiDate, normalizeSheetDate } from "./pricing";
 import type { ParsedMpesa } from "./types";
 
 export interface MatchResult {
@@ -49,13 +49,13 @@ export async function matchMpesaToOrders(smsTexts: string[]): Promise<SyncReport
   const report: SyncReport = { received: smsTexts, results: [], unmatchedTexts: [], errors: [] };
   const today = nairobiDate();
 
-  const ordersRead = await readTab("ORDERS");
-  const todaysPending: { row: number; total: number; id: string; customer: string }[] = [];
-  for (let i = 0; i < ordersRead.rows.length; i++) {
-    const raw = ordersRead.rows[i];
-    const order = rowToOrder(raw, ordersRead.rowNumbers[i]);
-    if (order.date !== today) continue;
-    if (order.pay_status !== "PENDING") continue;
+const ordersRead = await readTab("ORDERS");
+    const todaysPending: { row: number; total: number; id: string; customer: string }[] = [];
+    for (let i = 0; i < ordersRead.rows.length; i++) {
+      const raw = ordersRead.rows[i];
+      const order = rowToOrder(raw, ordersRead.rowNumbers[i]);
+      if (normalizeSheetDate(order.date) !== today) continue;
+      if (order.pay_status !== "PENDING") continue;
     todaysPending.push({
       row: ordersRead.rowNumbers[i],
       total: order.total,
