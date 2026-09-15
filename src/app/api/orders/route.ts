@@ -14,6 +14,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const date = url.searchParams.get("date") || nairobiDate();
+  const month = url.searchParams.get("month");
   const driverParam = url.searchParams.get("driver");
 
   try {
@@ -23,7 +24,9 @@ export async function GET(request: Request) {
       orders.push(rowToOrder(raw, read.rowNumbers[i]) as OrderWithRow);
     });
 
-    orders = orders.filter((o) => o.date === date);
+    orders = month
+      ? orders.filter((o) => o.date.length >= 7 && o.date.startsWith(month))
+      : orders.filter((o) => o.date === date);
 
     if (user.role === "rider") {
       // Riders only ever see their own queue, and never financials.

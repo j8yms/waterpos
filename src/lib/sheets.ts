@@ -161,10 +161,22 @@ export async function readTab(tabName: string): Promise<TabRead> {
   const sheets = await getSheets();
   const spreadsheetId = getSpreadsheetId();
 
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${tabName}!A1:ZZ`,
-  });
+  let res;
+  try {
+    res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${tabName}!A1:ZZ`,
+    });
+  } catch (err: any) {
+    // Google Sheets API throws 400 "Unable to parse range" when the tab
+    // doesn't exist yet. Return an empty result so callers fall back to
+    // their hardcoded defaults instead of crashing.
+    const msg = String(err?.message ?? err ?? "");
+    if (msg.includes("Unable to parse range") || msg.includes("not found") || msg.includes("SHEET_NOT_FOUND")) {
+      return { headers: [], columnsByKey: new Map(), rows: [], rowNumbers: [] };
+    }
+    throw err;
+  }
   const values = res.data.values ?? [];
 
   if (!values.length) {

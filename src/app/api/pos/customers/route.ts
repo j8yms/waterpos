@@ -1,5 +1,7 @@
 import { requireRole } from "@/lib/auth";
 import { appendRow, readTab, rowToCustomer, SheetsConfigError, updateRow } from "@/lib/sheets";
+import { DEFAULT_CUSTOMERS } from "@/lib/config";
+import crypto from "crypto";
 
 export const runtime = "nodejs";
 
@@ -12,7 +14,22 @@ export async function GET(request: Request) {
 
   try {
     const read = await readTab("CUSTOMERS");
-    let customers = read.rows.map(rowToCustomer).filter((c) => c.is_active);
+    let customers: ReturnType<typeof rowToCustomer>[];
+    if (read.rows.length) {
+      customers = read.rows.map(rowToCustomer);
+    } else {
+      // Sheet tab empty or missing — use the built-in seed catalog so the
+      // Customers directory always has data.
+      customers = DEFAULT_CUSTOMERS.map((c) => ({
+        id: crypto.randomUUID(),
+        location: c.location,
+        phone: c.phone,
+        address: c.address,
+        notes: c.notes,
+        is_active: true,
+      }));
+    }
+    customers = customers.filter((c) => c.is_active);
 
     if (q) {
       const terms = q.split(/\s+/).filter(Boolean);

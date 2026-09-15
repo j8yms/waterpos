@@ -29,6 +29,7 @@ export default function SalesFloor() {
   const [etimsOn, setEtimsOn] = useState(false);
   const [kraPin, setKraPin] = useState("");
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [todayOrders, setTodayOrders] = useState<DispatchOrder[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [refreshedAt, setRefreshedAt] = useState(0);
 
@@ -62,6 +63,15 @@ export default function SalesFloor() {
     }
   }, []);
 
+  const loadTodayOrders = useCallback(async () => {
+    try {
+      const res = await api<{ orders: DispatchOrder[] }>("/api/orders");
+      setTodayOrders(res.orders);
+    } catch {
+      setTodayOrders((prev) => prev);
+    }
+  }, []);
+
   useEffect(() => {
     const cached = tryCache<Product[]>("waterpos.products");
     if (cached && cached.length) {
@@ -70,11 +80,12 @@ export default function SalesFloor() {
     loadProducts();
     loadDrivers();
     loadSummary();
+    loadTodayOrders();
     flushPendingOps();
     api<{ customers: any[] }>("/api/pos/customers")
       .then((r) => cacheCustomers(r.customers))
       .catch(() => {});
-  }, [loadProducts, loadDrivers, loadSummary]);
+  }, [loadProducts, loadDrivers, loadSummary, loadTodayOrders]);
 
   useEffect(() => {
     loadSummary();
@@ -131,6 +142,7 @@ export default function SalesFloor() {
       setCustomer({ location: "", phone: "", address: "" });
       setRefreshedAt(Date.now());
       loadProducts();
+      loadTodayOrders();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Save failed.");
     } finally {
@@ -172,6 +184,11 @@ export default function SalesFloor() {
             <Link href="/customers" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Customers
             </Link>
+            {me?.role !== "rider" && (
+              <Link href="/reports" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+                Reports
+              </Link>
+            )}
           </nav>
           {me && (
             <div className="flex items-center gap-2">
@@ -195,6 +212,11 @@ export default function SalesFloor() {
           <Link href="/customers" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
             Customers
           </Link>
+          {me?.role !== "rider" && (
+            <Link href="/reports" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+              Reports
+            </Link>
+          )}
         </nav>
       </header>
 
@@ -242,6 +264,65 @@ export default function SalesFloor() {
               setKraPin={setKraPin}
             />
           </div>
+        </section>
+
+        {/* Today's Sales */}
+        <section className="lg:order-1 order-3 flex flex-col min-h-0 rounded-2xl border border-slate-800 bg-slate-950 p-3">
+          <h2 className="text-xs uppercase tracking-wider text-slate-400 font-black mb-2">
+            Today's Sales · {today}
+          </h2>
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
+            {todayOrders.length === 0 && (
+              <div className="text-center text-slate-600 text-sm py-6">
+                No dispatches yet today.
+              </div>
+            )}
+            {todayOrders.map((o) => (
+              <div
+                key={o.id}
+                className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-slate-900 border border-slate-800"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-slate-100 truncate leading-tight">
+                    {o.customer}
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate">
+                    {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-black text-emerald-400">{money(o.total)}</div>
+                  {me?.role !== "rider" && (
+                    <div className="text-[11px] text-slate-500 font-bold">
+                      +{money(o.profit)} profit
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {todayOrders.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-slate-800 rounded-2xl bg-slate-900 p-3 space-y-1">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs uppercase tracking-wider text-slate-400 font-black">
+                  Today's Total Gross Sales (Ksh)
+                </span>
+                <span className="text-lg font-black text-emerald-400">
+                  {money(todayOrders.reduce((s, o) => s + o.total, 0))}
+                </span>
+              </div>
+              {me?.role !== "rider" && (
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-black">
+                    Today's Total Profit
+                  </span>
+                  <span className="text-lg font-black text-sky-400">
+                    {money(todayOrders.reduce((s, o) => s + o.profit, 0))}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Product grid */}
