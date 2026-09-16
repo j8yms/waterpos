@@ -20,10 +20,27 @@
  * Credentials come from the environment: GOOGLE_CREDENTIALS (service-account
  * JSON) or GOOGLE_APPLICATION_CREDENTIALS, plus SPREADSHEET_ID.
  */
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
+import * as path from "path";
 import { appendRow, readTab, updateRow } from "../lib/sheets";
 import { toNumber } from "../lib/numbers";
 import type { Product } from "../lib/types";
+
+function loadEnvIfNeeded() {
+  if (process.env.SPREADSHEET_ID) return;
+  const envFile = path.resolve(process.cwd(), ".env.local");
+  if (!existsSync(envFile)) return;
+  if (typeof (process as any).loadEnvFile === "function") {
+    (process as any).loadEnvFile(envFile);
+    return;
+  }
+  for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^\s*([\w.]+)\s*=\s*(.*)\s*$/);
+    if (!m) continue;
+    const value = m[2].replace(/^["']|["']$/g, "").trim();
+    process.env[m[1]] = process.env[m[1]] ?? value;
+  }
+}
 
 const COLORS = ["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#14b8a6", "#ec4899", "#f43f5e", "#eab308"];
 
@@ -144,6 +161,7 @@ interface ImportReport {
 }
 
 async function main() {
+  loadEnvIfNeeded();
   const args = process.argv.slice(2);
   const fileArg = args.find((a) => !a.startsWith("-"));
   const dryRun = args.includes("--dry-run");

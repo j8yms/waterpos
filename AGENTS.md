@@ -7,3 +7,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Workflow
+
+- Always commit and push all changes without asking, once tsc and next build pass (or after tests for pure-script changes).
+- Keep commits focused with concise messages matching repo style.

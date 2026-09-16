@@ -9,6 +9,22 @@
  * Requires KRA_ETIMS_MOCK=true in the environment (see .env.local.example).
  */
 import { strict as assert } from "node:assert";
+import { existsSync, readFileSync } from "node:fs";
+
+// `tsx` doesn't auto-load .env.local. Mirror Next.js's env loading so the
+// self-test can run standalone with the same configuration (incl. KRA_ETIMS_MOCK=true).
+function loadEnvIfNeeded() {
+  if (process.env.KRA_ETIMS_MOCK) return;
+  const envFile = `${process.cwd()}/.env.local`;
+  if (!existsSync(envFile)) return;
+  for (const line of readFileSync(envFile, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^\s*([\w.]+)\s*=\s*(.*)\s*$/);
+    if (!m) continue;
+    const value = m[2].replace(/^["']|["']$/g, "").trim();
+    process.env[m[1]] = process.env[m[1]] ?? value;
+  }
+}
+loadEnvIfNeeded();
 
 import {
   buildEtimsInvoicePayload,
