@@ -187,8 +187,12 @@ export default function CheckoutModal({
         {method === "MPESA" && (
           <label className="block">
             <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
-              M-PESA confirmation code (optional)
+              M-PESA confirmation code (manual fallback)
             </span>
+            <div className="text-[10px] text-slate-600 mb-1">
+              Optional. The SMS webhook auto-matches your transactions — type a code here
+              only when auto-matching hasn't run.
+            </div>
             <input
               value={mpesaCode}
               onChange={(e) => setMpesaCode(e.target.value.toUpperCase())}

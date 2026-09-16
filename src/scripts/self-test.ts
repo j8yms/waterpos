@@ -1,4 +1,4 @@
-﻿/* eslint-disable no-console */
+/* eslint-disable no-console */
 /**
  * Offline, deterministic self-test for the KRA eTIMS (OSCU S2S / Tax Code B)
  * layer. Compiles green against the same lib the register route imports, and

@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { getSheets, readTab, rowToProduct, seedInitialData, SheetsConfigError } from "@/lib/sheets";
+import { appendRow, readTab, rowToProduct, seedInitialData, SheetsConfigError } from "@/lib/sheets";
 import { DEFAULT_PRODUCTS } from "@/lib/config";
 
 export const runtime = "nodejs";
@@ -36,28 +36,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const sheets = await getSheets();
-    const spreadsheetId = process.env.SPREADSHEET_ID || "";
     const { name, selling_price, wholesale_cost, unit, color, stock } = body;
     if (!name) return Response.json({ error: "Product name is required." }, { status: 400 });
 
     const id = "p" + Math.random().toString(36).slice(2, 8);
-    const row = [
+    // Header-driven append keeps PRODUCTS rows aligned with the sheet's
+    // column set (TABS.PRODUCTS), matching the customer / order flow.
+    await appendRow("PRODUCTS", {
       id,
-      String(name),
-      Number(selling_price ?? 0),
-      Number(wholesale_cost ?? 0),
-      String(unit ?? "Btl"),
-      String(color ?? "#475569"),
-      Number(stock ?? 0),
-      "TRUE",
-      new Date().toISOString(),
-    ];
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: "PRODUCTS!A1",
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [row] },
+      name: String(name),
+      selling_price: Number(selling_price ?? 0),
+      wholesale_cost: Number(wholesale_cost ?? 0),
+      unit: String(unit ?? "Btl"),
+      color: String(color ?? "#475569"),
+      stock: Number(stock ?? 0),
+      is_active: "TRUE",
+      updated_at: new Date().toISOString(),
     });
     return Response.json({ ok: true, id });
   } catch (err) {

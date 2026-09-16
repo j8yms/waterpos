@@ -41,16 +41,16 @@ async function main() {
 
   console.log("Pending matching");
   const candidates = [
-    { row: 2, total: 550, id: "ORD-A1", customer: "MARINA BAY (Regular)" },
-    { row: 3, total: 200, id: "ORD-B1", customer: "WESTLANDS (Walk-in)" },
+    { row: 2, tab: "ORDERS", total: 550, id: "ORD-A1", customer: "MARINA BAY (Regular)" },
+    { row: 3, tab: "OUT", total: 200, id: "ORD-B1", customer: "WESTLANDS (Walk-in)" },
   ];
-  const consumed = new Set<number>();
+  const consumed = new Set<string>();
   const m1 = findPendingMatch(candidates, 550, consumed);
-  check("matches exact amount", m1?.row === 2 && consumed.has(2), m1);
+  check("matches exact amount", m1?.row === 2 && consumed.has("ORDERS:2"), m1);
   const m2 = findPendingMatch(candidates, 550, consumed);
   check("does not double-consume same row", m2 === null, m2);
   const m3 = findPendingMatch(candidates, 200.049, consumed);
-  check("tolerance match on 200.049", m3?.row === 3, m3);
+  check("tolerance match on 200.049", m3?.row === 3 && m3?.tab === "OUT", m3);
 
   console.log("Profit math");
   const items: TicketItem[] = [

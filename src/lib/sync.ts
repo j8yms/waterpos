@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { readTab, rowToOrder, updateRow } from "./sheets";
+import { readAllLedgerRows, updateRow } from "./sheets";
 import { amountsMatch, parseMpesaSms, extractSmsFromPayload } from "./mpesa";
 import { nairobiDate, normalizeSheetDate } from "./pricing";
 import type { ParsedMpesa } from "./types";
@@ -9,6 +9,7 @@ export interface MatchResult {
   matched: {
     orderId: string;
     row: number;
+    tab: string;
     code: string;
     amount: number;
     customer: string;
@@ -31,40 +32,40 @@ export interface SyncReport {
  * matches the paid amount (within tolerance), skipping consumed rows.
  */
 export function findPendingMatch(
-  candidates: { row: number; total: number; id: string; customer: string }[],
+  candidates: { row: number; tab: string; total: number; id: string; customer: string }[],
   amount: number,
-  consumedRows: Set<number>
-): { row: number; id: string; customer: string } | null {
-  const candidate = candidates.find((p) => !consumedRows.has(p.row) && amountsMatch(p.total, amount));
+  consumedRows: Set<string>
+): { row: number; tab: string; id: string; customer: string } | null {
+  const candidate = candidates.find((p) => !consumedRows.has(`${p.tab}:${p.row}`) && amountsMatch(p.total, amount));
   if (!candidate) return null;
-  consumedRows.add(candidate.row);
-  return { row: candidate.row, id: candidate.id, customer: candidate.customer };
+  consumedRows.add(`${candidate.tab}:${candidate.row}`);
+  return { row: candidate.row, tab: candidate.tab, id: candidate.id, customer: candidate.customer };
 }
 
 /**
- * Core rule: scan today's PENDING orders, match exact amount, flip to PAID and
- * write the M-Pesa reference code into the MPESA_CODE column.
+ * Core rule: scan today's PENDING orders (across both the ORDERS and legacy
+ * OUT tabs), match exact amount, flip to PAID and write the M-Pesa reference
+ * code into the MPESA_CODE column of whichever tab the row lives in.
  */
 export async function matchMpesaToOrders(smsTexts: string[]): Promise<SyncReport> {
   const report: SyncReport = { received: smsTexts, results: [], unmatchedTexts: [], errors: [] };
   const today = nairobiDate();
 
-const ordersRead = await readTab("ORDERS");
-    const todaysPending: { row: number; total: number; id: string; customer: string }[] = [];
-    for (let i = 0; i < ordersRead.rows.length; i++) {
-      const raw = ordersRead.rows[i];
-      const order = rowToOrder(raw, ordersRead.rowNumbers[i]);
-      if (normalizeSheetDate(order.date) !== today) continue;
-      if (order.pay_status !== "PENDING") continue;
+  const ledger = await readAllLedgerRows();
+  const todaysPending: { row: number; tab: string; total: number; id: string; customer: string }[] = [];
+  for (const { order, tab } of ledger) {
+    if (normalizeSheetDate(order.date) !== today) continue;
+    if (order.pay_status !== "PENDING") continue;
     todaysPending.push({
-      row: ordersRead.rowNumbers[i],
+      row: order._row,
+      tab,
       total: order.total,
       id: order.id,
       customer: order.customer,
     });
   }
 
-  const consumedRows = new Set<number>();
+  const consumedRows = new Set<string>();
 
   for (const sms of smsTexts) {
     const parsed = parseMpesaSms(sms);
@@ -78,7 +79,7 @@ const ordersRead = await readTab("ORDERS");
       report.unmatchedTexts.push(sms);
       continue;
     }
-    await updateRow("ORDERS", candidate.row, {
+    await updateRow(candidate.tab, candidate.row, {
       pay_status: "PAID",
       mpesa_code: parsed.code,
     });
@@ -89,6 +90,7 @@ const ordersRead = await readTab("ORDERS");
       matched: {
         orderId: candidate.id,
         row: candidate.row,
+        tab: candidate.tab,
         code: parsed.code,
         amount: parsed.amount,
         customer: candidate.customer,

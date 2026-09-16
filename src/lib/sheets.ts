@@ -395,3 +395,40 @@ export function rowToOrder(r: Record<string, any>, rowNumber: number): DispatchO
     _row: rowNumber,
   } as DispatchOrder & { _row: number };
 }
+
+export interface LedgerRow {
+  order: DispatchOrder & { _row: number };
+  tab: string; // "ORDERS" or "OUT" — where the row actually lives
+}
+
+/**
+ * Read the full sales ledger across both the live ORDERS tab and the legacy
+ * OUT tab, deduplicating by order id (newer tab wins on conflict) and
+ * remembering which tab each row came from so callers update the right one.
+ */
+export async function readAllLedgerRows(): Promise<LedgerRow[]> {
+  const byId = new Map<string, LedgerRow>();
+  for (const tab of ["ORDERS", "OUT"] as const) {
+    let read: TabRead;
+    try {
+      read = await readTab(tab);
+    } catch {
+      continue;
+    }
+    if (!read.rows.length) continue;
+    read.rows.forEach((raw, i) => {
+      const order = rowToOrder(raw, read.rowNumbers[i]) as DispatchOrder & { _row: number };
+      const existing = byId.get(order.id);
+      // Later tab (ORDERS) wins over legacy OUT when both hold the same id.
+      if (!existing || existsInLaterTab(tab, existing.tab)) {
+        byId.set(order.id, { order, tab });
+      }
+    });
+  }
+  return [...byId.values()];
+}
+
+function existsInLaterTab(current: string, existing: string): boolean {
+  const order = ["ORDERS", "OUT"];
+  return order.indexOf(current) < order.indexOf(existing);
+}

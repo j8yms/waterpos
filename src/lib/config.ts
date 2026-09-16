@@ -42,32 +42,39 @@ export const DEFAULT_CUSTOMERS: { location: string; phone: string; address: stri
   { location: "KAHAWA (Regular)", phone: "0700000005", address: "Kahawa Wendani", notes: "" },
 ];
 
+export const LEDGER_HEADERS: string[] = [
+  "id",
+  "date",
+  "time",
+  "customer",
+  "phone",
+  "address",
+  "product",
+  "qty",
+  "unit_price",
+  "total",
+  "glovo",
+  "pay_status",
+  "driver",
+  "profit",
+  "mpesa_code",
+  "notes",
+  "etims_num",
+  "cu_serial",
+  "etims_url",
+  "created_at",
+  "payment_method",
+];
+
 export const TABS: Record<string, string[]> = {
   PRODUCTS: ["id", "name", "selling_price", "wholesale_cost", "unit", "color", "stock", "is_active", "updated_at"],
   CUSTOMERS: ["id", "location", "phone", "address", "notes", "is_active", "updated_at"],
-  ORDERS: [
-    "id",
-    "date",
-    "time",
-    "customer",
-    "phone",
-    "address",
-    "product",
-    "qty",
-    "unit_price",
-    "total",
-    "glovo",
-    "pay_status",
-    "driver",
-    "profit",
-    "mpesa_code",
-    "notes",
-    "etims_num",
-    "cu_serial",
-    "etims_url",
-    "created_at",
-    "payment_method",
-  ],
+  // ORDERS is the live dispatch ledger; OUT is the legacy tab earlier
+  // spreadsheet versions used. Both share the same layout so reads,
+  // writes and the M-PESA matcher stay correct regardless of which tab
+  // a row lives in.
+  ORDERS: LEDGER_HEADERS,
+  OUT: LEDGER_HEADERS,
   USERS: ["id", "name", "pin", "role", "active"],
   IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
 };
