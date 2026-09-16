@@ -242,6 +242,51 @@ export async function appendRow(tabName: string, record: Record<string, any>): P
   });
 }
 
+/**
+ * Append many rows in small batches with retry/backoff. The Sheets API rate
+ * limits writes per minute, so a large one-off migration (e.g. Aronium import)
+ * must spread requests out instead of firing 200+ calls in a single burst.
+ */
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export async function appendRowsBatched(
+  tabName: string,
+  records: Record<string, any>[],
+  chunkSize = 25
+): Promise<void> {
+  const sheets = await getSheets();
+  const spreadsheetId = getSpreadsheetId();
+  const headers = TABS[tabName] ?? [];
+  if (!headers.length) throw new Error(`No header definition for tab ${tabName}`);
+
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    const values = chunk.map((record) => headers.map((h) => record[h] ?? ""));
+
+    let attempts = 0;
+    for (;;) {
+      try {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId,
+          range: `${tabName}!A1`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: { values },
+        });
+        break;
+      } catch (err: any) {
+        attempts++;
+        const msg = String(err?.message ?? err ?? "");
+        const quota = /quota|rate.?limit|429|RESOURCE_EXHAUSTED/i.test(msg);
+        if (!quota || attempts >= 6) throw err;
+        // Back off: 5s, 10s, 20s, 40s, 80s
+        await sleep(5000 * 2 ** (attempts - 1));
+      }
+    }
+
+    if (i + chunkSize < records.length) await sleep(2000);
+  }
+}
+
 export async function updateRow(
   tabName: string,
   rowNumber: number,

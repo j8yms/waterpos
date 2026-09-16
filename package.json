@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "tsx src/scripts/self-test.ts",
     "import:aronium": "tsx src/scripts/import-aronium.ts",
+    "import:aronium-sqlite": "tsx src/scripts/import-aronium-sqlite.ts",
     "lint": "eslint"
   },
   "dependencies": {
