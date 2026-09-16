@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const sheets = await getSheets();
-    const spreadsheetId = process.env.SPREADSHEET_ID!;
+    const spreadsheetId = process.env.SPREADSHEET_ID || "";
     const { name, selling_price, wholesale_cost, unit, color, stock } = body;
     if (!name) return Response.json({ error: "Product name is required." }, { status: 400 });
 

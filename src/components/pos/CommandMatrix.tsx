@@ -53,10 +53,11 @@ function MatrixTile({
 export default function CommandMatrix({
   hasItems,
   selected,
+  glovo,
+  onToggleGlovo,
   onPayment,
   onCash,
   onMpesa,
-  onGlovo,
   onDelete,
   onVoid,
   etimsOn,
@@ -67,10 +68,11 @@ export default function CommandMatrix({
 }: {
   hasItems: boolean;
   selected: string | null;
+  glovo: boolean;
+  onToggleGlovo: () => void;
   onPayment: () => void;
   onCash: () => void;
   onMpesa: () => void;
-  onGlovo: () => void;
   onDelete: () => void;
   onVoid: () => void;
   etimsOn: boolean;
@@ -113,7 +115,23 @@ export default function CommandMatrix({
         />
         <MatrixTile shortcut="F12" label="CASH" tone="blue" onClick={onCash} disabled={!hasItems} />
         <MatrixTile shortcut="F4" label="M-PESA" tone="slate" onClick={onMpesa} disabled={!hasItems} />
-        <MatrixTile shortcut="F5" label="GLOVO" tone="amber" onClick={onGlovo} disabled={!hasItems} />
+        <button
+          onClick={onToggleGlovo}
+          disabled={!hasItems}
+          className={`relative rounded-2xl flex flex-col items-center justify-center gap-1 select-none transition active:scale-[0.96] ${
+            glovo
+              ? "bg-gradient-to-b from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-900/40"
+              : "bg-slate-800 hover:bg-amber-600/30 text-amber-300 border border-slate-700"
+          } ${!hasItems ? "opacity-40 cursor-not-allowed" : ""}`}
+        >
+          <span className="absolute top-1.5 left-2 text-[10px] font-black opacity-70">F5</span>
+          <span className="text-sm font-black px-1 text-center leading-tight">
+            {glovo ? "GLOVO ON" : "GLOVO"}
+          </span>
+          <span className={`text-[9px] font-bold ${glovo ? "text-white/80" : "text-amber-500/60"}`}>
+            channel
+          </span>
+        </button>
         <MatrixTile
           shortcut="F8"
           label={selected ? "DELETE LINE" : "DELETE LAST"}
@@ -141,6 +159,7 @@ export default function CommandMatrix({
             </h2>
             <span className="text-[10px] font-bold text-slate-600">Vinnie · Emma · Tracy</span>
           </div>
+          <Toggle checked={glovo} onChange={onToggleGlovo} label="Glovo Order (20% commission)" accent="amber" />
           <Toggle checked={etimsOn} onChange={setEtimsOn} label="Generate KRA eTIMS" accent="sky" />
           {etimsOn && (
             <label className="block">

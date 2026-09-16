@@ -77,6 +77,9 @@ export default function Reports() {
             <Link href="/customers" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Customers
             </Link>
+            <Link href="/catalog" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+              Products
+            </Link>
             <Link href="/reports" className="px-3 py-1.5 rounded-lg bg-sky-500/15 text-sky-300 font-bold">
               Reports
             </Link>

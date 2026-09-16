@@ -28,7 +28,7 @@ export default function SalesFloor() {
   const [driver, setDriver] = useState("");
   const [charging, setCharging] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [checkoutMethod, setCheckoutMethod] = useState<PaymentMethod | null>(null);
+  const [checkoutMethod, setCheckoutMethod] = useState<"CASH" | "MPESA" | null>(null);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
   const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
   const [etimsOn, setEtimsOn] = useState(false);
@@ -130,16 +130,14 @@ export default function SalesFloor() {
     setSelected(null);
   }
 
-  function openCheckout(method: PaymentMethod | null) {
+  function openCheckout(method: "CASH" | "MPESA" | null) {
     if (!cart.length) return;
     setCheckoutMethod(method);
-    if (method === "GLOVO") setGlovo(true);
-    else if (method && glovo) setGlovo(false);
     setCheckoutOpen(true);
   }
 
   async function charge(payment: {
-    paymentMethod: "CASH" | "MPESA" | "GLOVO";
+    paymentMethod: "CASH" | "MPESA";
     tendered: number;
     change: number;
     mpesaCode: string;
@@ -147,9 +145,11 @@ export default function SalesFloor() {
     if (!cart.length || !driver) return;
     setCharging(true);
     setErr(null);
-    const payStatus: "PAID" | "PENDING" =
-      payment.paymentMethod === "GLOVO" ? "PENDING" : "PAID";
-    const glovoFlag = payment.paymentMethod === "GLOVO" || glovo;
+    // Glovo flips the payout mapping: the order is remitted via the Glovo
+    // channel (PENDING until Glovo pays out) even though the till still
+    // records the customer's actual tender (CASH or M-PESA).
+    const glovoFlag = glovo;
+    const payStatus: "PAID" | "PENDING" = glovoFlag ? "PENDING" : "PAID";
     try {
       const body = {
         driver,
@@ -176,6 +176,7 @@ export default function SalesFloor() {
       setCustomer({ location: "", phone: "", address: "" });
       setDriver("");
       setCheckoutOpen(false);
+      setGlovo(false);
       setRefreshedAt(Date.now());
       loadProducts();
       loadTodayOrders();
@@ -222,6 +223,11 @@ export default function SalesFloor() {
               Customers
             </Link>
             {isAdmin && (
+              <Link href="/catalog" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+                Products
+              </Link>
+            )}
+            {isAdmin && (
               <Link href="/reports" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
                 Reports
               </Link>
@@ -249,6 +255,11 @@ export default function SalesFloor() {
           <Link href="/customers" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
             Customers
           </Link>
+          {isAdmin && (
+            <Link href="/catalog" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+              Products
+            </Link>
+          )}
           {isAdmin && (
             <Link href="/reports" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Reports
@@ -367,10 +378,11 @@ export default function SalesFloor() {
         <CommandMatrix
           hasItems={cart.length > 0}
           selected={selected}
+          glovo={glovo}
+          onToggleGlovo={() => setGlovo((v) => !v)}
           onPayment={() => openCheckout(null)}
           onCash={() => openCheckout("CASH")}
           onMpesa={() => openCheckout("MPESA")}
-          onGlovo={() => openCheckout("GLOVO")}
           onDelete={deleteLine}
           onVoid={voidOrder}
           etimsOn={etimsOn}

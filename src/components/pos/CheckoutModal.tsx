@@ -24,7 +24,7 @@ export default function CheckoutModal({
   open: boolean;
   onClose: () => void;
   onRegister: (payload: {
-    paymentMethod: PaymentMethod;
+    paymentMethod: "CASH" | "MPESA";
     tendered: number;
     change: number;
     mpesaCode: string;
@@ -37,9 +37,9 @@ export default function CheckoutModal({
   setEtimsOn: (v: boolean) => void;
   kraPin: string;
   setKraPin: (v: string) => void;
-  initialMethod?: PaymentMethod | null;
+  initialMethod?: "CASH" | "MPESA" | null;
 }) {
-  const [method, setMethod] = useState<PaymentMethod | null>(null);
+  const [method, setMethod] = useState<"CASH" | "MPESA" | null>(null);
   const [tendered, setTendered] = useState("");
   const [mpesaCode, setMpesaCode] = useState("");
 
@@ -59,10 +59,8 @@ export default function CheckoutModal({
   const registerReady =
     !!method && !charging && !(total > 0 && method === "CASH" && tenderedNum < total);
 
-  function select(next: PaymentMethod) {
+  function select(next: "CASH" | "MPESA") {
     setMethod(next);
-    if (next === "GLOVO") setGlovo(true);
-    if (next !== "GLOVO" && glovo) setGlovo(false);
   }
 
   function register() {
@@ -94,11 +92,11 @@ export default function CheckoutModal({
           </button>
         </div>
 
-        {/* Payment method tiles */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Payment method tiles: CASH and M-PESA are the only payment methods */}
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => select("CASH")}
-            className={`h-24 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
+            className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
               method === "CASH"
                 ? "border-emerald-400 bg-emerald-500/15 text-emerald-300"
                 : "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-600"
@@ -109,7 +107,7 @@ export default function CheckoutModal({
           </button>
           <button
             onClick={() => select("MPESA")}
-            className={`h-24 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
+            className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
               method === "MPESA"
                 ? "border-emerald-400 bg-emerald-500/15 text-emerald-300"
                 : "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-600"
@@ -117,17 +115,6 @@ export default function CheckoutModal({
           >
             <span className="text-2xl">📱</span>
             <span className="text-sm font-black">M-PESA</span>
-          </button>
-          <button
-            onClick={() => select("GLOVO")}
-            className={`h-24 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
-              method === "GLOVO"
-                ? "border-amber-400 bg-amber-500/15 text-amber-300"
-                : "border-slate-700 bg-slate-900 text-slate-300 hover:border-amber-600"
-            }`}
-          >
-            <span className="text-2xl">📦</span>
-            <span className="text-sm font-black">GLOVO</span>
           </button>
         </div>
 
@@ -213,11 +200,8 @@ export default function CheckoutModal({
           </label>
         )}
 
-        {method === "GLOVO" && (
-          <div className="rounded-2xl border border-amber-600/40 bg-amber-500/10 px-3 py-2.5 text-sm font-bold text-amber-300">
-            GLOVO order — payment collected as PENDING until Glovo pays out.
-          </div>
-        )}
+{/* Sales channel toggle — not a payment method */}
+        <Toggle checked={glovo} onChange={setGlovo} label="Glovo Order (20% commission deducted)" accent="amber" />
 
         {/* eTIMS (optional flow) */}
         <Toggle checked={etimsOn} onChange={setEtimsOn} label="Generate KRA eTIMS" accent="sky" />
@@ -248,7 +232,7 @@ export default function CheckoutModal({
                 : "bg-slate-800 text-slate-500"
             }`}
           >
-            {charging ? "Saving…" : method === "GLOVO" ? "REGISTER GLOVO ORDER & PRINT" : "REGISTER TRANSACTION & PRINT"}
+            {charging ? "Saving…" : "REGISTER TRANSACTION & PRINT"}
           </BigButton>
           <button
             onClick={onClose}

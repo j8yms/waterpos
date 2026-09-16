@@ -103,13 +103,13 @@ export async function POST(request: Request) {
       paymentMethodRaw === "CASH" || paymentMethodRaw === "MPESA" || paymentMethodRaw === "GLOVO"
         ? paymentMethodRaw
         : "";
-    // CASH and M-PESA settle instantly; GLOVO orders stay PENDING until Glovo pays out.
-    const payStatus: "PAID" | "PENDING" =
-      paymentMethod === "CASH" || paymentMethod === "MPESA"
+    // CASH and M-PESA settle instantly; GLOVO-channel orders stay PENDING
+    // until Glovo pays out (explicitly passed by the client via payStatus).
+    const payStatus: "PAID" | "PENDING" = glovo
+      ? "PENDING"
+      : String(body.payStatus ?? body.pay_status ?? "PENDING").toUpperCase() === "PAID"
         ? "PAID"
-        : String(body.payStatus ?? body.pay_status ?? "PENDING").toUpperCase() === "PAID"
-          ? "PAID"
-          : "PENDING";
+        : "PENDING";
     const notes = String(body.notes ?? "");
     const requested = Array.isArray(body.items) ? body.items : [];
 
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       unit_price: items.reduce((s, i) => s + i.unitPrice * i.qty, 0) / Math.max(1, items.reduce((s, i) => s + i.qty, 0)),
       total: Math.round(totals.subtotal * 100) / 100,
       glovo: glovo || paymentMethod === "GLOVO",
-      pay_status: paymentMethod === "GLOVO" ? "PENDING" : payStatus,
+      pay_status: payStatus,
       payment_method: paymentMethod,
       driver,
       profit: Math.round(totals.finalProfit * 100) / 100,
