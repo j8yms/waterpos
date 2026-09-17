@@ -64,3 +64,18 @@ body {
 button {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Credential onboarding panel slide-open (self-service PIN setup) */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out;
+}

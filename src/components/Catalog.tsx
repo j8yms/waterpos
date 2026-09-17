@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cacheProducts, clearAuth, currentUser } from "@/lib/client";
+import { canManageStaff } from "@/lib/config";
 import { money } from "@/lib/pricing";
 import { BigButton } from "@/components/ui";
 import type { Product } from "@/lib/types";
@@ -23,6 +24,7 @@ const EMPTY: Draft = { name: "", selling_price: "", wholesale_cost: "", unit: ""
 export default function Catalog() {
   const router = useRouter();
   const me = currentUser();
+  const canStaff = canManageStaff(me);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -185,6 +187,11 @@ export default function Catalog() {
             <Link href="/reports" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Reports
             </Link>
+            {canStaff && (
+              <Link href="/staff" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+                Staff
+              </Link>
+            )}
           </nav>
           {me && (
             <div className="flex items-center gap-2">

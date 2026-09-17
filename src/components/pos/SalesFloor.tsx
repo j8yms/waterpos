@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
 import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
 import { money, nairobiDate, computeTicket, parseProductLine } from "@/lib/pricing";
-import { DEFAULT_RIDERS } from "@/lib/config";
+import { DEFAULT_RIDERS, canManageStaff } from "@/lib/config";
 import ProductSearch from "./ProductSearch";
 import TransactionTable from "./TransactionTable";
 import CommandMatrix from "./CommandMatrix";
@@ -247,7 +247,8 @@ export default function SalesFloor() {
   }
 
   const today = nairobiDate();
-  const isAdmin = me?.role === "management";
+  const isAdmin = me?.role === "management" || me?.role === "master";
+  const canStaff = canManageStaff(me);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -281,6 +282,11 @@ export default function SalesFloor() {
                 Reports
               </Link>
             )}
+            {canStaff && (
+              <Link href="/staff" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+                Staff
+              </Link>
+            )}
           </nav>
           {me && (
             <div className="flex items-center gap-2">
@@ -312,6 +318,11 @@ export default function SalesFloor() {
           {isAdmin && (
             <Link href="/reports" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Reports
+            </Link>
+          )}
+          {canStaff && (
+            <Link href="/staff" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+              Staff
             </Link>
           )}
         </nav>

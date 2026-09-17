@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, clearAuth, currentUser } from "@/lib/client";
+import { canManageStaff } from "@/lib/config";
 import type { DebtAccount, GlovoMetrics, RiderMatrixRow, TopSellingItem } from "@/lib/types";
 import type { DispatchOrder } from "@/lib/types";
 import { money, nairobiDate } from "@/lib/pricing";
@@ -35,6 +36,7 @@ interface CreditAccount {
 export default function Reports() {
   const router = useRouter();
   const me = currentUser();
+  const canStaff = canManageStaff(me);
 
   const [day, setDay] = useState(nairobiDate());
   const [period, setPeriod] = useState<"day" | "month">("day");
@@ -175,6 +177,11 @@ export default function Reports() {
             <Link href="/reports" className="px-3 py-1.5 rounded-lg bg-sky-500/15 text-sky-300 font-bold">
               Reports
             </Link>
+            {canStaff && (
+              <Link href="/staff" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+                Staff
+              </Link>
+            )}
           </nav>
           {me && (
             <div className="flex items-center gap-2">

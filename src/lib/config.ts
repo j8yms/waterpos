@@ -18,13 +18,45 @@ export const DEFAULT_PINS: Record<string, string> = {
   KAMAU: process.env.PIN_KAMAU || "6082",
 };
 
-export const DEFAULT_STAFF: { id: string; name: string; role: Role; pin: string }[] = [
-  { id: "vin", name: "Vinnie", role: "management", pin: DEFAULT_PINS.VINNIE },
-  { id: "emm", name: "Emma", role: "management", pin: DEFAULT_PINS.EMMA },
-  { id: "tra", name: "Tracy", role: "management", pin: DEFAULT_PINS.TRACY },
-  { id: "waj", name: "Wajakoya", role: "rider", pin: DEFAULT_PINS.WAJAKOYA },
-  { id: "mac", name: "Macharia", role: "rider", pin: DEFAULT_PINS.MACHARIA },
-  { id: "kam", name: "Kamau", role: "rider", pin: DEFAULT_PINS.KAMAU },
+/**
+ * Hidden master Super Admin (business owner).
+ * - PIN 0800 permanently bypasses every standard employee pathway.
+ * - Never written to the USERS sheet and never listed in any staff directory,
+ *   so it stays invisible to Vinnie, Emma, Tracy and all riders.
+ * - 0800 is reserved: it can never be assigned as another user's PIN.
+ */
+export const MASTER_PIN = "0800";
+export const MASTER_ADMIN: { id: string; name: string; role: Role } = {
+  id: "master-owner",
+  name: "Owner",
+  role: "master",
+};
+
+/** Staff Management (PIN reset panel) is limited to the hidden master (0800)
+ *  and the named lead admin (Vinnie) only — not every management account. */
+export const STAFF_MANAGER_NAMES: string[] = ["vinnie"];
+export function canManageStaff(
+  user: { name?: string; role?: Role } | null | undefined
+): boolean {
+  if (!user) return false;
+  if (user.role === "master") return true;
+  if (user.role !== "management") return false;
+  return STAFF_MANAGER_NAMES.includes(String(user.name ?? "").trim().toLowerCase());
+}
+
+export const DEFAULT_STAFF: {
+  id: string;
+  name: string;
+  role: Role;
+  pin: string;
+  is_reset_pending: boolean;
+}[] = [
+  { id: "vin", name: "Vinnie", role: "management", pin: DEFAULT_PINS.VINNIE, is_reset_pending: false },
+  { id: "emm", name: "Emma", role: "management", pin: DEFAULT_PINS.EMMA, is_reset_pending: false },
+  { id: "tra", name: "Tracy", role: "management", pin: DEFAULT_PINS.TRACY, is_reset_pending: false },
+  { id: "waj", name: "Wajakoya", role: "rider", pin: DEFAULT_PINS.WAJAKOYA, is_reset_pending: false },
+  { id: "mac", name: "Macharia", role: "rider", pin: DEFAULT_PINS.MACHARIA, is_reset_pending: false },
+  { id: "kam", name: "Kamau", role: "rider", pin: DEFAULT_PINS.KAMAU, is_reset_pending: false },
 ];
 
 export const DEFAULT_PRODUCTS: Product[] = [
@@ -83,7 +115,7 @@ export const TABS: Record<string, string[]> = {
   // a row lives in.
   ORDERS: LEDGER_HEADERS,
   OUT: LEDGER_HEADERS,
-  USERS: ["id", "name", "pin", "role", "active"],
+  USERS: ["id", "name", "pin", "role", "active", "is_reset_pending"],
   IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
   // REPAYMENTS is the cash/M-Pesa cash-flow log appended to on every
   // recorded debt repayment (action "logRepayment").

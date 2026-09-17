@@ -16,8 +16,10 @@ import type {
   DispatchOrder,
   Product,
   Role,
+  StaffMember,
   User,
 } from "./types";
+import { MASTER_ADMIN, MASTER_PIN } from "./config";
 
 /* ── seed JSON (bundled at build) ─────────────────────────────────────────── */
 import seed from "../data/seed.json";
@@ -79,6 +81,7 @@ interface StaffRow {
   role: string;
   pin?: string;
   active?: boolean | string;
+  is_reset_pending?: boolean | string;
 }
 
 export function getStaff(): StaffRow[] {
@@ -86,6 +89,23 @@ export function getStaff(): StaffRow[] {
 }
 export function setStaff(list: StaffRow[]): void {
   writeLS(STAFF_KEY, list);
+}
+
+function isPending(s: StaffRow): boolean {
+  return String(s.is_reset_pending ?? "").trim().toUpperCase() === "TRUE" || s.is_reset_pending === true;
+}
+
+/** Admin directory view — identical shape to the live /api/staff response. */
+export function getStaffDirectory(): StaffMember[] {
+  return getStaff()
+    .filter((s) => String(s.active ?? "TRUE").toUpperCase() !== "FALSE")
+    .filter((s) => String(s.role).toLowerCase() !== "master")
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      role: (String(s.role).toLowerCase() === "rider" ? "rider" : "management") as Role,
+      is_reset_pending: isPending(s),
+    }));
 }
 
 export function getOrders(date?: string): DispatchOrder[] {
@@ -109,17 +129,78 @@ function buildToken(user: User): AuthSession {
 }
 
 export function loginPin(pin: string): AuthSession | null {
+  if (pin === MASTER_PIN) {
+    return buildToken({ id: MASTER_ADMIN.id, name: MASTER_ADMIN.name, role: "master" });
+  }
   const staff = getStaff();
   const match = staff.find(
     (s) =>
       s.pin === pin &&
-      String(s.active ?? "TRUE").toUpperCase() !== "FALSE",
+      !isPending(s) &&
+      String(s.active ?? "TRUE").toUpperCase() !== "FALSE" &&
+      String(s.role).toLowerCase() !== "master",
   );
   if (!match) return null;
   const role: Role =
     String(match.role).toLowerCase() === "rider" ? "rider" : "management";
   const user: User = { id: match.id, name: match.name, role };
   return buildToken(user);
+}
+
+/** Named login mirroring POST /api/auth/login (identity + PIN). */
+export function loginIdentity(
+  name: string,
+  pin: string,
+): AuthSession | { requiresSetup: true; name: string } | null {
+  if (pin === MASTER_PIN) {
+    return buildToken({ id: MASTER_ADMIN.id, name: MASTER_ADMIN.name, role: "master" });
+  }
+  const match = getStaff().find(
+    (s) => s.name.trim().toLowerCase() === name.trim().toLowerCase(),
+  );
+  if (!match) return null;
+  if (isPending(match)) return { requiresSetup: true, name: match.name };
+  if (String(match.active ?? "TRUE").toUpperCase() === "FALSE") return null;
+  if (match.pin !== pin) return null;
+  const role: Role =
+    String(match.role).toLowerCase() === "rider" ? "rider" : "management";
+  return buildToken({ id: match.id, name: match.name, role });
+}
+
+/** Self-service PIN registration mirroring POST /api/auth/reset-pin. */
+export function resetStaffPin(
+  name: string,
+  pin: string,
+): AuthSession | { error: string } {
+  if (!/^\d{4}$/.test(pin)) return { error: "PIN must be exactly 4 digits." };
+  if (pin === MASTER_PIN) return { error: "That PIN is reserved. Choose another." };
+
+  const staff = getStaff();
+  const idx = staff.findIndex(
+    (s) => s.name.trim().toLowerCase() === name.trim().toLowerCase(),
+  );
+  if (idx < 0) return { error: "Worker not found." };
+  if (!isPending(staff[idx])) return { error: "No PIN reset is pending for this worker." };
+
+  const collision = staff.some((s, i) => i !== idx && s.pin === pin);
+  if (collision) return { error: "That PIN is already in use. Choose another." };
+
+  staff[idx] = { ...staff[idx], pin, is_reset_pending: false };
+  setStaff(staff);
+
+  const role: Role =
+    String(staff[idx].role).toLowerCase() === "rider" ? "rider" : "management";
+  return buildToken({ id: staff[idx].id, name: staff[idx].name, role });
+}
+
+/** Clear a worker's PIN and flag their record for self-service reset. */
+export function resetPinForStaff(id: string): boolean {
+  const staff = getStaff();
+  const idx = staff.findIndex((s) => s.id === id);
+  if (idx < 0) return false;
+  staff[idx] = { ...staff[idx], pin: "", is_reset_pending: true };
+  setStaff(staff);
+  return true;
 }
 
 /* ── dashboard ────────────────────────────────────────────────────────────── */
@@ -326,9 +407,24 @@ export function staticApiRoute<T = unknown>(
     return { ok: true } as T;
   }
 
+  // ─── GET /api/auth/identities (public roster for the login canvas) ───
+  if (method === "GET" && path === "/api/auth/identities") {
+    return { staff: getStaffDirectory() } as T;
+  }
+
   // ─── GET /api/staff ───
   if (method === "GET" && path === "/api/staff") {
-    return { staff: getStaff() } as T;
+    return { staff: getStaffDirectory() } as T;
+  }
+
+  // ─── POST /api/staff (action: resetPin) ───
+  if (method === "POST" && path === "/api/staff" && body) {
+    const id = String(body.id ?? "");
+    if (body.action !== "resetPin" || !id) return { error: "Unsupported action." } as T;
+    const target = getStaffDirectory().find((s) => s.id === id);
+    if (!target) return { error: "Staff member not found." } as T;
+    resetPinForStaff(id);
+    return { ok: true, id, name: target.name, is_reset_pending: true } as T;
   }
 
   // ─── GET /api/dashboard ───
@@ -366,9 +462,21 @@ export function staticApiRoute<T = unknown>(
 
   // ─── POST /api/auth/login ───
   if (method === "POST" && path === "/api/auth/login" && body) {
-    const session = loginPin(String(body.pin ?? ""));
-    if (session) return session as T;
-    return { error: "Invalid PIN" } as T;
+    const name = String(body.name ?? "").trim();
+    const pin = String(body.pin ?? "");
+    const result = name ? loginIdentity(name, pin) : loginPin(pin);
+    if (result && "requiresSetup" in result) return result as T;
+    if (result && "token" in result) return result as T;
+    return { error: "Invalid credentials." } as T;
+  }
+
+  // ─── POST /api/auth/reset-pin ───
+  if (method === "POST" && path === "/api/auth/reset-pin" && body) {
+    const name = String(body.name ?? "").trim();
+    const pin = String(body.pin ?? "");
+    const confirm = String(body.confirm ?? "");
+    if (confirm && confirm !== pin) return { error: "PIN entries do not match." } as T;
+    return resetStaffPin(name, pin) as T;
   }
 
   // ─── POST /api/etims/register ───

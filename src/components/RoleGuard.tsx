@@ -22,7 +22,7 @@ export default function RoleGuard({
       router.replace("/");
       return;
     }
-    if (role === "management" && user.role !== "management") {
+    if (role === "management" && user.role !== "management" && user.role !== "master") {
       router.replace("/pos/rider");
       return;
     }

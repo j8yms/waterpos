@@ -1,9 +1,18 @@
-export type Role = "management" | "rider";
+export type Role = "management" | "rider" | "master";
 
 export interface User {
   id: string;
   name: string;
   role: Role;
+}
+
+/** A staff record as shown in the Admin staff directory (never includes the
+ *  hidden master account, and never exposes the PIN itself). */
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: Role;
+  is_reset_pending: boolean;
 }
 
 export interface AuthSession {

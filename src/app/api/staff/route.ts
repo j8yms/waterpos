@@ -1,18 +1,76 @@
-import { requireRole } from "@/lib/auth";
-import { getUsersFromSheet } from "@/lib/sheets";
+import { requireUser } from "@/lib/auth";
+import { canManageStaff } from "@/lib/config";
+import { listStaffUsers, updateStaffCredentials, ensureSpreadsheetStructure } from "@/lib/sheets";
 
 export const runtime = "nodejs";
 
+/**
+ * Staff directory. Visible to the hidden master 0800 account and Vinnie only.
+ * The master account is never in the USERS sheet, so it can never be listed.
+ */
 export async function GET(request: Request) {
-  const user = requireRole(request, "management");
-  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+  const user = requireUser(request);
+  if (!user || !canManageStaff(user)) {
+    return Response.json({ error: "Unauthorized." }, { status: 401 });
+  }
 
   try {
-    const users = await getUsersFromSheet();
+    const staff = await listStaffUsers();
     return Response.json({
-      staff: users.map((u) => ({ id: u.id, name: u.name, role: u.role })),
+      staff: staff.map((s) => ({
+        id: s.id,
+        name: s.name,
+        role: s.role,
+        is_reset_pending: s.is_reset_pending,
+      })),
     });
   } catch {
     return Response.json({ staff: [] });
+  }
+}
+
+interface StaffBody {
+  action?: "resetPin";
+  id?: string;
+}
+
+/**
+ * Clear a user's PIN and flag their record for self-service re-registration.
+ * The worker then sets their own PIN from the login canvas.
+ */
+export async function POST(request: Request) {
+  const user = requireUser(request);
+  if (!user || !canManageStaff(user)) {
+    return Response.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  let body: StaffBody;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const id = String(body.id ?? "").trim();
+  if (!id) return Response.json({ error: "Missing staff id." }, { status: 400 });
+  if (body.action !== "resetPin") {
+    return Response.json({ error: "Unsupported action." }, { status: 400 });
+  }
+
+  try {
+    await ensureSpreadsheetStructure();
+    const staff = await listStaffUsers();
+    const target = staff.find((s) => String(s.id) === id);
+    if (!target) return Response.json({ error: "Staff member not found." }, { status: 404 });
+
+    const ok = await updateStaffCredentials(id, { pin: "", is_reset_pending: true });
+    if (!ok) return Response.json({ error: "Staff row not found in USERS sheet." }, { status: 404 });
+
+    return Response.json({ ok: true, id, name: target.name, is_reset_pending: true });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Failed to reset PIN." },
+      { status: 500 }
+    );
   }
 }

@@ -2,7 +2,7 @@ import { google, type sheets_v4 } from "googleapis";
 import { existsSync } from "fs";
 import crypto from "crypto";
 import { DEFAULT_CUSTOMERS, DEFAULT_PRODUCTS, DEFAULT_STAFF, SEED_TABS, TABS } from "./config";
-import type { Customer, DispatchOrder, Product } from "./types";
+import type { Customer, DispatchOrder, Product, Role } from "./types";
 import { toNumber } from "./numbers";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
@@ -402,25 +402,91 @@ export async function getUsersFromSheet() {
           const role: "management" | "rider" = String(r.role || "").toLowerCase().includes("rider")
             ? "rider"
             : "management";
-          const pin = String(r.pin || "").trim() || base?.pin || "0000";
+          // A cleared credentials slot during a pending self-service reset must
+          // never fall back to the default/seed PIN, or the reset would be moot.
+          const is_reset_pending = String(r.is_reset_pending ?? "").trim().toUpperCase() === "TRUE";
+          const pin = is_reset_pending ? "" : String(r.pin || "").trim() || base?.pin || "0000";
           return {
             id: String(r.id || crypto.randomUUID()),
             name: String(r.name).trim(),
             role,
             pin,
+            is_reset_pending,
           };
         });
       if (users.length) {
         return users.map((u) => ({
           ...u,
-          pin: pinOverrides[u.id] || u.pin,
+          pin: u.is_reset_pending ? "" : pinOverrides[u.id] || u.pin,
         }));
       }
     }
   } catch {
     // fall through to defaults on any failure
   }
-  return DEFAULT_STAFF;
+  return DEFAULT_STAFF.map((s) => ({ ...s }));
+}
+
+export interface StaffUser {
+  id: string;
+  name: string;
+  role: Role;
+  is_reset_pending: boolean;
+  rowNumber: number | null;
+}
+
+/**
+ * Full staff directory for the Admin Staff Management panel. Returns every
+ * registered employee (management + riders) with their reset flag and the
+ * sheet row needed to update them. The hidden master account is never stored
+ * in the USERS sheet, so it can never appear here.
+ */
+export async function listStaffUsers(): Promise<StaffUser[]> {
+  try {
+    const read = await readTab("USERS");
+    const staff = read.rows
+      .map((r, i): StaffUser | null => {
+        const name = String(r.name ?? "").trim();
+        if (!name) return null;
+        const role: Role = String(r.role || "").toLowerCase().includes("rider") ? "rider" : "management";
+        return {
+          id: String(r.id || name.toLowerCase()),
+          name,
+          role,
+          is_reset_pending: String(r.is_reset_pending ?? "").trim().toUpperCase() === "TRUE",
+          rowNumber: read.rowNumbers[i] ?? null,
+        } satisfies StaffUser;
+      })
+      .filter((s): s is StaffUser => s !== null);
+    if (staff.length) return staff;
+  } catch {
+    // fall through to defaults when the sheet is unreachable/empty
+  }
+  return DEFAULT_STAFF.map((s) => ({
+    id: s.id,
+    name: s.name,
+    role: s.role,
+    is_reset_pending: false,
+    rowNumber: null,
+  }));
+}
+
+/** Flip a user's reset flag / clear or set their PIN in the USERS sheet. */
+export async function updateStaffCredentials(
+  id: string,
+  changes: { pin?: string; is_reset_pending?: boolean }
+): Promise<boolean> {
+  const read = await readTab("USERS");
+  const idx = read.rows.findIndex((r) => String(r.id) === String(id));
+  if (idx < 0) return false;
+  const rowNumber = read.rowNumbers[idx];
+  const patch: Record<string, string> = {};
+  if (changes.pin !== undefined) patch.pin = changes.pin;
+  if (changes.is_reset_pending !== undefined) {
+    patch.is_reset_pending = changes.is_reset_pending ? "TRUE" : "FALSE";
+  }
+  await updateRow("USERS", rowNumber, patch);
+  return true;
 }
 
 export function rowToProduct(r: Record<string, any>): Product {
