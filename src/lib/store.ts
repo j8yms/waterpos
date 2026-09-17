@@ -433,8 +433,32 @@ export function staticApiRoute<T = unknown>(
     return { staff: getStaffDirectory() } as T;
   }
 
-  // ─── POST /api/staff (action: resetPin | toggleSuspend) ───
+  // ─── POST /api/staff (action: resetPin | toggleSuspend | create) ───
   if (method === "POST" && path === "/api/staff" && body) {
+    if (body.action === "create") {
+      const name = String(body.name ?? "").trim();
+      const role = String(body.role ?? "");
+      const pin = String(body.pin ?? "").trim();
+      if (!name) return { error: "Name required." } as T;
+      if (!role || !["rider", "management"].includes(role)) return { error: "Role must be 'rider' or 'management'." } as T;
+      if (!/^\d{4}$/.test(pin)) return { error: "PIN must be exactly 4 digits." } as T;
+      if (pin === "0800") return { error: "PIN 0800 is reserved." } as T;
+
+      const existing = getStaff();
+      if (existing.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+        return { error: "A staff member with this name already exists." } as T;
+      }
+      if (existing.some((s) => s.pin === pin)) {
+        return { error: "This PIN is already assigned to another staff member." } as T;
+      }
+
+      const staff = getStaff();
+      const newId = crypto.randomUUID();
+      staff.push({ id: newId, name, role, pin, active: true, is_reset_pending: false, isSuspended: false });
+      setStaff(staff);
+      return { ok: true, id: newId, name, role } as T;
+    }
+
     const id = String(body.id ?? "");
     if (!id) return { error: "Missing staff id." } as T;
     const target = getStaffDirectory().find((s) => s.id === id);

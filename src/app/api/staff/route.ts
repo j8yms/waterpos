@@ -1,6 +1,7 @@
+import crypto from "crypto";
 import { requireUser } from "@/lib/auth";
 import { canManageStaff } from "@/lib/config";
-import { listStaffUsers, updateStaffCredentials, ensureSpreadsheetStructure } from "@/lib/sheets";
+import { listStaffUsers, updateStaffCredentials, ensureSpreadsheetStructure, appendRow, getUsersFromSheet } from "@/lib/sheets";
 
 export const runtime = "nodejs";
 
@@ -31,9 +32,12 @@ export async function GET(request: Request) {
 }
 
 interface StaffBody {
-  action?: "resetPin" | "toggleSuspend";
+  action?: "resetPin" | "toggleSuspend" | "create";
   id?: string;
   isSuspended?: boolean;
+  name?: string;
+  role?: "rider" | "management";
+  pin?: string;
 }
 
 /**
@@ -53,11 +57,55 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
+  // Create new staff (master + Vinnie only)
+  const canSuspend = user.role === "master" || (user.role === "management" && user.name?.toLowerCase() === "vinnie");
+
+  if (body.action === "create") {
+    if (!canSuspend) {
+      return Response.json({ error: "Insufficient privileges to create staff." }, { status: 403 });
+    }
+    const name = String(body.name ?? "").trim();
+    const role = body.role;
+    const pin = String(body.pin ?? "").trim();
+    if (!name) return Response.json({ error: "Name required." }, { status: 400 });
+    if (!role || !["rider", "management"].includes(role)) return Response.json({ error: "Role must be 'rider' or 'management'." }, { status: 400 });
+    if (!/^\d{4}$/.test(pin)) return Response.json({ error: "PIN must be exactly 4 digits." }, { status: 400 });
+    if (pin === "0800") return Response.json({ error: "PIN 0800 is reserved." }, { status: 400 });
+
+    try {
+      await ensureSpreadsheetStructure();
+
+      // Check for duplicate name/PIN using full user list (includes PINs)
+      const allUsers = await getUsersFromSheet();
+      if (allUsers.some((u) => u.name.toLowerCase() === name.toLowerCase())) {
+        return Response.json({ error: "A staff member with this name already exists." }, { status: 409 });
+      }
+      if (allUsers.some((u) => u.pin === pin)) {
+        return Response.json({ error: "This PIN is already assigned to another staff member." }, { status: 409 });
+      }
+
+      const newId = crypto.randomUUID();
+      await appendRow("USERS", {
+        id: newId,
+        name,
+        pin,
+        role,
+        active: "TRUE",
+        is_reset_pending: "FALSE",
+        isSuspended: "FALSE",
+      });
+
+      return Response.json({ ok: true, id: newId, name, role });
+    } catch (err) {
+      return Response.json(
+        { error: err instanceof Error ? err.message : "Failed to create staff." },
+        { status: 500 }
+      );
+    }
+  }
+
   const id = String(body.id ?? "").trim();
   if (!id) return Response.json({ error: "Missing staff id." }, { status: 400 });
-
-  // Suspend/unsuspend is restricted to master (0800) and Vinnie only
-  const canSuspend = user.role === "master" || (user.role === "management" && user.name?.toLowerCase() === "vinnie");
 
   if (body.action === "toggleSuspend") {
     if (!canSuspend) {

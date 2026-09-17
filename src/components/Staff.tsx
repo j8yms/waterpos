@@ -10,6 +10,8 @@ import { Spinner } from "@/components/ui";
 
 type Feedback = { kind: "ok" | "err"; text: string } | null;
 
+type NewStaffForm = { name: string; role: "rider" | "management"; pin: string };
+
 export default function Staff() {
   const router = useRouter();
   const me = currentUser();
@@ -20,6 +22,9 @@ export default function Staff() {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const authorized = canManageStaff(me);
   const canSuspend = me?.role === "master" || (me?.role === "management" && me.name?.toLowerCase() === "vinnie");
+  const [showCreate, setShowCreate] = useState(false);
+  const [newStaff, setNewStaff] = useState<NewStaffForm>({ name: "", role: "rider", pin: "" });
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!authorized) router.replace("/pos");
@@ -85,6 +90,29 @@ export default function Staff() {
       setFeedback({ kind: "err", text: e instanceof Error ? e.message : "Suspend toggle failed." });
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function createStaff() {
+    if (!newStaff.name.trim() || !/^\d{4}$/.test(newStaff.pin)) {
+      setFeedback({ kind: "err", text: "Name required and PIN must be 4 digits." });
+      return;
+    }
+    setCreating(true);
+    setFeedback(null);
+    try {
+      await api("/api/staff", {
+        method: "POST",
+        body: { action: "create", ...newStaff },
+      });
+      await load();
+      setNewStaff({ name: "", role: "rider", pin: "" });
+      setShowCreate(false);
+      setFeedback({ kind: "ok", text: `${newStaff.name} added as ${newStaff.role}.` });
+    } catch (e) {
+      setFeedback({ kind: "err", text: e instanceof Error ? e.message : "Create failed." });
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -158,6 +186,54 @@ export default function Staff() {
             }`}
           >
             {feedback.text}
+          </div>
+        )}
+
+        {canSuspend && (
+          <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="font-black text-slate-100">+ Add New Staff</h2>
+              <button
+                onClick={() => setShowCreate(!showCreate)}
+                className="ml-auto text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 font-black border border-slate-700"
+              >
+                {showCreate ? "Cancel" : "Open Form"}
+              </button>
+            </div>
+            {showCreate && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Full name (e.g., John Doe)"
+                  value={newStaff.name}
+                  onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <select
+                  value={newStaff.role}
+                  onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value as "rider" | "management" })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  <option value="rider">Rider</option>
+                  <option value="management">Management</option>
+                </select>
+                <input
+                  type="password"
+                  placeholder="4-digit PIN"
+                  value={newStaff.pin}
+                  onChange={(e) => setNewStaff({ ...newStaff, pin: e.target.value })}
+                  maxLength={4}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <button
+                  onClick={createStaff}
+                  disabled={creating}
+                  className="w-full px-4 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black disabled:opacity-50"
+                >
+                  {creating ? "Adding…" : "Create Staff"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
