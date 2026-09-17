@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, cacheAssignments, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
 import { money, nairobiDate } from "@/lib/pricing";
-import { printReceipt, receiptFromOrder } from "@/lib/print";
+import { printToNetwork, receiptFromOrder } from "@/lib/print";
 import { Spinner } from "@/components/ui";
 import type { DispatchOrder, PayStatus } from "@/lib/types";
 
@@ -181,8 +181,8 @@ export default function RiderQueue() {
                         <div className="font-black text-sky-200 truncate">{o.mpesa_code}</div>
                       </div>
                       <button
-                        onClick={() =>
-                          printReceipt(receiptFromOrder(o, { operator: me?.name || "Rider" }))
+                        onClick={async () =>
+                          await printToNetwork(receiptFromOrder(o, { operator: me?.name || "Rider" }))
                         }
                         className="shrink-0 text-xs font-black px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white active:scale-95 transition"
                       >

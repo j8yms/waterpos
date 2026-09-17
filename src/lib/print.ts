@@ -197,6 +197,37 @@ export function printReceipt(data: ReceiptData): void {
   setTimeout(fire, 120);
 }
 
+/**
+ * Send receipt to the laptop's print server (cross-device printing).
+ * Set env var NEXT_PUBLIC_PRINT_SERVER_URL to the laptop's print server URL
+ * (e.g., "http://192.168.1.42:3001").
+ * Falls back to local iframe print if not configured or on error.
+ */
+export async function printToNetwork(data: ReceiptData): Promise<void> {
+  const printServerUrl = process.env.NEXT_PUBLIC_PRINT_SERVER_URL;
+  if (!printServerUrl) {
+    // No print server configured — fall back to local print
+    printReceipt(data);
+    return;
+  }
+
+  const html = buildReceiptHtml(data);
+
+  try {
+    const res = await fetch(`${printServerUrl}/print`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: html, type: "html" }),
+    });
+    if (!res.ok) throw new Error(`Print server returned ${res.status}`);
+    const result = await res.json();
+    console.log("✅ Network print sent:", result);
+  } catch (err) {
+    console.warn("⚠️ Network print failed, falling back to local:", err);
+    printReceipt(data);
+  }
+}
+
 export function receiptFromOrder(
   order: any,
   opts: { operator: string; businessName?: string }

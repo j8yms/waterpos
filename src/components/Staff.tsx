@@ -19,6 +19,7 @@ export default function Staff() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const authorized = canManageStaff(me);
+  const canSuspend = me?.role === "master" || (me?.role === "management" && me.name?.toLowerCase() === "vinnie");
 
   useEffect(() => {
     if (!authorized) router.replace("/pos");
@@ -61,6 +62,29 @@ export default function Staff() {
     } finally {
       setBusyId(null);
       setConfirmId(null);
+    }
+  }
+
+  async function toggleSuspend(member: StaffMember) {
+    setBusyId(member.id);
+    setFeedback(null);
+    const newSuspended = !member.isSuspended;
+    try {
+      await api("/api/staff", {
+        method: "POST",
+        body: { action: "toggleSuspend", id: member.id, isSuspended: newSuspended },
+      });
+      setStaff((list) =>
+        list.map((s) => (s.id === member.id ? { ...s, isSuspended: newSuspended } : s))
+      );
+      setFeedback({
+        kind: "ok",
+        text: `${member.name} has been ${newSuspended ? "suspended" : "unsuspended"}.`,
+      });
+    } catch (e) {
+      setFeedback({ kind: "err", text: e instanceof Error ? e.message : "Suspend toggle failed." });
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -148,7 +172,7 @@ export default function Staff() {
               {staff.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 px-3.5 py-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-black truncate">{s.name}</span>
                       <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md ${roleBadge(s.role)}`}>
                         {s.role === "rider" ? "Rider" : "Management"}
@@ -158,37 +182,57 @@ export default function Staff() {
                           Reset pending
                         </span>
                       )}
+                      {s.isSuspended && (
+                        <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300">
+                          Suspended
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {confirmId === s.id ? (
-                    <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
+                    {confirmId === s.id ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => resetPin(s)}
+                          disabled={busyId === s.id}
+                          className="text-xs px-3 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black disabled:opacity-50"
+                        >
+                          {busyId === s.id ? "…" : "Confirm"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmId(null)}
+                          disabled={busyId === s.id}
+                          className="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => resetPin(s)}
-                        disabled={busyId === s.id}
-                        className="text-xs px-3 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black disabled:opacity-50"
+                        onClick={() => {
+                          setConfirmId(s.id);
+                          setFeedback(null);
+                        }}
+                        className="shrink-0 text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 font-black border border-slate-700"
                       >
-                        {busyId === s.id ? "…" : "Confirm"}
+                        Reset PIN
                       </button>
+                    )}
+                    {canSuspend && (
                       <button
-                        onClick={() => setConfirmId(null)}
+                        onClick={() => toggleSuspend(s)}
                         disabled={busyId === s.id}
-                        className="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold disabled:opacity-50"
+                        className={`shrink-0 text-xs px-3 py-2 rounded-lg font-black border ${
+                          s.isSuspended
+                            ? "bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border-emerald-700/50"
+                            : "bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border-rose-700/50"
+                        } disabled:opacity-50`}
                       >
-                        Cancel
+                        {busyId === s.id ? "…" : s.isSuspended ? "UNSUSPEND" : "SUSPEND"}
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setConfirmId(s.id);
-                        setFeedback(null);
-                      }}
-                      className="shrink-0 text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 font-black border border-slate-700"
-                    >
-                      Reset PIN
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </li>
               ))}
               {!staff.length && (

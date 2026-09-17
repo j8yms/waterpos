@@ -49,6 +49,15 @@ export async function POST(request: Request) {
     );
   }
 
+  if (resolved.status === "suspended") {
+    return Response.json(
+      {
+        error: "Account Suspended. Contact Management.",
+      },
+      { status: 403 }
+    );
+  }
+
   if (resolved.status !== "ok") {
     return Response.json({ error: "Invalid credentials." }, { status: 401 });
   }

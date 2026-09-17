@@ -31,6 +31,7 @@ export function masterUser(): User {
 export type LoginResult =
   | { status: "ok"; user: User }
   | { status: "pending"; user: User }
+  | { status: "suspended"; user: User }
   | { status: "invalid" };
 
 /**
@@ -46,6 +47,7 @@ export async function authenticatePin(pin: string): Promise<User | null> {
   const users = await getUsersFromSheet();
   const match = users.find((u) => u.pin === normalized && !u.is_reset_pending);
   if (!match) return null;
+  if (match.isSuspended) return null;
 
   return { id: match.id, name: match.name, role: match.role as Role };
 }
@@ -67,6 +69,7 @@ export async function authenticateIdentity(name: string, pin: string): Promise<L
   if (!match) return { status: "invalid" };
 
   const identity: User = { id: match.id, name: match.name, role: match.role as Role };
+  if (match.isSuspended) return { status: "suspended", user: identity };
   if (match.is_reset_pending) return { status: "pending", user: identity };
   if (match.pin !== normalizedPin) return { status: "invalid" };
   return { status: "ok", user: identity };

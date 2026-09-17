@@ -22,6 +22,7 @@ export async function GET(request: Request) {
         name: s.name,
         role: s.role,
         is_reset_pending: s.is_reset_pending,
+        isSuspended: s.isSuspended,
       })),
     });
   } catch {
@@ -30,8 +31,9 @@ export async function GET(request: Request) {
 }
 
 interface StaffBody {
-  action?: "resetPin";
+  action?: "resetPin" | "toggleSuspend";
   id?: string;
+  isSuspended?: boolean;
 }
 
 /**
@@ -53,6 +55,35 @@ export async function POST(request: Request) {
 
   const id = String(body.id ?? "").trim();
   if (!id) return Response.json({ error: "Missing staff id." }, { status: 400 });
+
+  // Suspend/unsuspend is restricted to master (0800) and Vinnie only
+  const canSuspend = user.role === "master" || (user.role === "management" && user.name?.toLowerCase() === "vinnie");
+
+  if (body.action === "toggleSuspend") {
+    if (!canSuspend) {
+      return Response.json({ error: "Insufficient privileges to suspend/unsuspend." }, { status: 403 });
+    }
+    if (typeof body.isSuspended !== "boolean") {
+      return Response.json({ error: "Missing isSuspended boolean." }, { status: 400 });
+    }
+    try {
+      await ensureSpreadsheetStructure();
+      const staff = await listStaffUsers();
+      const target = staff.find((s) => String(s.id) === id);
+      if (!target) return Response.json({ error: "Staff member not found." }, { status: 404 });
+
+      const ok = await updateStaffCredentials(id, { isSuspended: body.isSuspended });
+      if (!ok) return Response.json({ error: "Staff row not found in USERS sheet." }, { status: 404 });
+
+      return Response.json({ ok: true, id, name: target.name, isSuspended: body.isSuspended });
+    } catch (err) {
+      return Response.json(
+        { error: err instanceof Error ? err.message : "Failed to toggle suspend." },
+        { status: 500 }
+      );
+    }
+  }
+
   if (body.action !== "resetPin") {
     return Response.json({ error: "Unsupported action." }, { status: 400 });
   }

@@ -82,6 +82,7 @@ interface StaffRow {
   pin?: string;
   active?: boolean | string;
   is_reset_pending?: boolean | string;
+  isSuspended?: boolean | string;
 }
 
 export function getStaff(): StaffRow[] {
@@ -95,6 +96,10 @@ function isPending(s: StaffRow): boolean {
   return String(s.is_reset_pending ?? "").trim().toUpperCase() === "TRUE" || s.is_reset_pending === true;
 }
 
+function isSuspended(s: StaffRow): boolean {
+  return String(s.isSuspended ?? "").trim().toUpperCase() === "TRUE" || s.isSuspended === true;
+}
+
 /** Admin directory view — identical shape to the live /api/staff response. */
 export function getStaffDirectory(): StaffMember[] {
   return getStaff()
@@ -105,6 +110,7 @@ export function getStaffDirectory(): StaffMember[] {
       name: s.name,
       role: (String(s.role).toLowerCase() === "rider" ? "rider" : "management") as Role,
       is_reset_pending: isPending(s),
+      isSuspended: isSuspended(s),
     }));
 }
 
@@ -199,6 +205,16 @@ export function resetPinForStaff(id: string): boolean {
   const idx = staff.findIndex((s) => s.id === id);
   if (idx < 0) return false;
   staff[idx] = { ...staff[idx], pin: "", is_reset_pending: true };
+  setStaff(staff);
+  return true;
+}
+
+/** Toggle a worker's suspended status. */
+export function toggleSuspendForStaff(id: string, isSuspended: boolean): boolean {
+  const staff = getStaff();
+  const idx = staff.findIndex((s) => s.id === id);
+  if (idx < 0) return false;
+  staff[idx] = { ...staff[idx], isSuspended };
   setStaff(staff);
   return true;
 }
@@ -417,12 +433,20 @@ export function staticApiRoute<T = unknown>(
     return { staff: getStaffDirectory() } as T;
   }
 
-  // ─── POST /api/staff (action: resetPin) ───
+  // ─── POST /api/staff (action: resetPin | toggleSuspend) ───
   if (method === "POST" && path === "/api/staff" && body) {
     const id = String(body.id ?? "");
-    if (body.action !== "resetPin" || !id) return { error: "Unsupported action." } as T;
+    if (!id) return { error: "Missing staff id." } as T;
     const target = getStaffDirectory().find((s) => s.id === id);
     if (!target) return { error: "Staff member not found." } as T;
+
+    if (body.action === "toggleSuspend") {
+      if (typeof body.isSuspended !== "boolean") return { error: "Missing isSuspended boolean." } as T;
+      toggleSuspendForStaff(id, body.isSuspended);
+      return { ok: true, id, name: target.name, isSuspended: body.isSuspended } as T;
+    }
+
+    if (body.action !== "resetPin") return { error: "Unsupported action." } as T;
     resetPinForStaff(id);
     return { ok: true, id, name: target.name, is_reset_pending: true } as T;
   }

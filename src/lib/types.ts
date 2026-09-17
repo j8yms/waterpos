@@ -13,6 +13,7 @@ export interface StaffMember {
   name: string;
   role: Role;
   is_reset_pending: boolean;
+  isSuspended: boolean;
 }
 
 export interface AuthSession {

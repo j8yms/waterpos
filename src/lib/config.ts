@@ -14,8 +14,6 @@ export const DEFAULT_PINS: Record<string, string> = {
   EMMA: process.env.PIN_EMMA || "1947",
   TRACY: process.env.PIN_TRACY || "9503",
   WAJAKOYA: process.env.PIN_WAFAKOYA || process.env.PIN_WAJAKOYA || "7721",
-  MACHARIA: process.env.PIN_MACHARIA || "3150",
-  KAMAU: process.env.PIN_KAMAU || "6082",
 };
 
 /**
@@ -50,13 +48,12 @@ export const DEFAULT_STAFF: {
   role: Role;
   pin: string;
   is_reset_pending: boolean;
+  isSuspended: boolean;
 }[] = [
-  { id: "vin", name: "Vinnie", role: "management", pin: DEFAULT_PINS.VINNIE, is_reset_pending: false },
-  { id: "emm", name: "Emma", role: "management", pin: DEFAULT_PINS.EMMA, is_reset_pending: false },
-  { id: "tra", name: "Tracy", role: "management", pin: DEFAULT_PINS.TRACY, is_reset_pending: false },
-  { id: "waj", name: "Wajakoya", role: "rider", pin: DEFAULT_PINS.WAJAKOYA, is_reset_pending: false },
-  { id: "mac", name: "Macharia", role: "rider", pin: DEFAULT_PINS.MACHARIA, is_reset_pending: false },
-  { id: "kam", name: "Kamau", role: "rider", pin: DEFAULT_PINS.KAMAU, is_reset_pending: false },
+  { id: "vin", name: "Vinnie", role: "management", pin: DEFAULT_PINS.VINNIE, is_reset_pending: false, isSuspended: false },
+  { id: "emm", name: "Emma", role: "management", pin: DEFAULT_PINS.EMMA, is_reset_pending: false, isSuspended: false },
+  { id: "tra", name: "Tracy", role: "management", pin: DEFAULT_PINS.TRACY, is_reset_pending: false, isSuspended: false },
+  { id: "waj", name: "Wajakoya", role: "rider", pin: DEFAULT_PINS.WAJAKOYA, is_reset_pending: false, isSuspended: false },
 ];
 
 export const DEFAULT_PRODUCTS: Product[] = [
@@ -115,7 +112,7 @@ export const TABS: Record<string, string[]> = {
   // a row lives in.
   ORDERS: LEDGER_HEADERS,
   OUT: LEDGER_HEADERS,
-  USERS: ["id", "name", "pin", "role", "active", "is_reset_pending"],
+  USERS: ["id", "name", "pin", "role", "active", "is_reset_pending", "isSuspended"],
   IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
   // REPAYMENTS is the cash/M-Pesa cash-flow log appended to on every
   // recorded debt repayment (action "logRepayment").

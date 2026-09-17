@@ -13,7 +13,7 @@ import CommandMatrix from "./CommandMatrix";
 import PrintPrompt from "./PrintPrompt";
 import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
-import { printReceipt, receiptFromOrder } from "@/lib/print";
+import { printToNetwork, receiptFromOrder } from "@/lib/print";
 
 const WALK_IN = "WALK-IN";
 
@@ -236,9 +236,9 @@ export default function SalesFloor() {
     }
   }
 
-  function doPrint() {
+  async function doPrint() {
     if (!savedOrder) return;
-    printReceipt(receiptFromOrder(savedOrder, { operator: me?.name || "POS" }));
+    await printToNetwork(receiptFromOrder(savedOrder, { operator: me?.name || "POS" }));
   }
 
   function logout() {
@@ -442,9 +442,9 @@ export default function SalesFloor() {
                       )}
                     </div>
                     <button
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        printReceipt(receiptFromOrder(o, { operator: me?.name || "POS" }));
+                        await printToNetwork(receiptFromOrder(o, { operator: me?.name || "POS" }));
                       }}
                       className="shrink-0 w-9 h-9 rounded-lg bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-sm transition active:scale-95"
                       title="Reprint receipt"

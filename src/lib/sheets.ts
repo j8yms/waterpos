@@ -402,9 +402,8 @@ export async function getUsersFromSheet() {
           const role: "management" | "rider" = String(r.role || "").toLowerCase().includes("rider")
             ? "rider"
             : "management";
-          // A cleared credentials slot during a pending self-service reset must
-          // never fall back to the default/seed PIN, or the reset would be moot.
           const is_reset_pending = String(r.is_reset_pending ?? "").trim().toUpperCase() === "TRUE";
+          const isSuspended = String(r.isSuspended ?? "").trim().toUpperCase() === "TRUE";
           const pin = is_reset_pending ? "" : String(r.pin || "").trim() || base?.pin || "0000";
           return {
             id: String(r.id || crypto.randomUUID()),
@@ -412,6 +411,7 @@ export async function getUsersFromSheet() {
             role,
             pin,
             is_reset_pending,
+            isSuspended,
           };
         });
       if (users.length) {
@@ -432,6 +432,7 @@ export interface StaffUser {
   name: string;
   role: Role;
   is_reset_pending: boolean;
+  isSuspended: boolean;
   rowNumber: number | null;
 }
 
@@ -454,6 +455,7 @@ export async function listStaffUsers(): Promise<StaffUser[]> {
           name,
           role,
           is_reset_pending: String(r.is_reset_pending ?? "").trim().toUpperCase() === "TRUE",
+          isSuspended: String(r.isSuspended ?? "").trim().toUpperCase() === "TRUE",
           rowNumber: read.rowNumbers[i] ?? null,
         } satisfies StaffUser;
       })
@@ -467,14 +469,15 @@ export async function listStaffUsers(): Promise<StaffUser[]> {
     name: s.name,
     role: s.role,
     is_reset_pending: false,
+    isSuspended: false,
     rowNumber: null,
   }));
 }
 
-/** Flip a user's reset flag / clear or set their PIN in the USERS sheet. */
+/** Flip a user's reset flag / clear or set their PIN / suspend in the USERS sheet. */
 export async function updateStaffCredentials(
   id: string,
-  changes: { pin?: string; is_reset_pending?: boolean }
+  changes: { pin?: string; is_reset_pending?: boolean; isSuspended?: boolean }
 ): Promise<boolean> {
   const read = await readTab("USERS");
   const idx = read.rows.findIndex((r) => String(r.id) === String(id));
@@ -484,6 +487,9 @@ export async function updateStaffCredentials(
   if (changes.pin !== undefined) patch.pin = changes.pin;
   if (changes.is_reset_pending !== undefined) {
     patch.is_reset_pending = changes.is_reset_pending ? "TRUE" : "FALSE";
+  }
+  if (changes.isSuspended !== undefined) {
+    patch.isSuspended = changes.isSuspended ? "TRUE" : "FALSE";
   }
   await updateRow("USERS", rowNumber, patch);
   return true;
