@@ -294,8 +294,13 @@ export function staticApiRoute<T = unknown>(
     return { customers: list } as T;
   }
 
-  // ─── POST /api/pos/customers (add) ───
+  // ─── POST /api/pos/customers (add) / action "deleteCustomer" (purge) ───
   if (method === "POST" && path === "/api/pos/customers" && body) {
+    if (body.action === "deleteCustomer") {
+      const list = getCustomers().filter((c) => c.id !== body.id);
+      setCustomers(list);
+      return { ok: true, deleted: body.id } as T;
+    }
     const list = getCustomers();
     const newC: Customer = {
       id: `cust-${Date.now().toString(36)}`,
@@ -375,6 +380,127 @@ export function staticApiRoute<T = unknown>(
     return registerEtimsStatic(order, body.items as { name: string; qty: number; unitPrice: number }[]) as T;
   }
 
+  // ─── POST /api/repayments (action: logRepayment) ───
+  if (method === "POST" && path === "/api/repayments" && body) {
+    const customer = String(body.customer ?? "").trim().toLowerCase();
+    const amount = Number(body.amount || 0);
+    if (!customer || !(amount > 0)) return { error: "Customer and amount required." } as T;
+    let applied = 0;
+    const settledRows: string[] = [];
+    // Scan every stored day's orders (static mode has no cross-day aggregation helper).
+    const allKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) ?? "";
+      if (k.startsWith("waterpos.static.orders.")) allKeys.push(k.replace("waterpos.static.orders.", ""));
+    }
+    if (!allKeys.includes(todayStr())) allKeys.push(todayStr());
+    for (const d of allKeys) {
+      const orders = getOrders(d);
+      let changed = false;
+      for (const o of orders) {
+        if (applied >= amount) break;
+        if (o.pay_status !== "PENDING") continue;
+        if (String(o.customer).trim().toLowerCase() !== customer) continue;
+        const pay = Math.min(o.total, amount - applied);
+        applied += pay;
+        o.pay_status = "PAID";
+        changed = true;
+        settledRows.push(o.id);
+      }
+      if (changed) setOrders(d, orders);
+    }
+    return { ok: true, applied, excess: Math.max(0, amount - applied), settledRows } as T;
+  }
+
+  // ─── GET /api/reports (static snapshot) ───
+  if (method === "GET" && path === "/api/reports") {
+    const orders: DispatchOrder[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) ?? "";
+      if (k.startsWith("waterpos.static.orders.")) {
+        const d = k.replace("waterpos.static.orders.", "");
+        orders.push(...getOrders(d));
+      }
+    }
+    if (!orders.length && !getOrders().length) orders.push(...getOrders());
+
+    const debts = buildStaticDebts(orders);
+    const riderMatrix = buildStaticRiderMatrix(orders);
+    const glovo = buildStaticGlovo(orders);
+    const topSelling = buildStaticTopSelling(orders);
+    return { debts, riderMatrix, glovo, topSelling } as T;
+  }
+
   // ─── fallback: unknown route ───
   throw new Error(`Static mode: unknown route ${method} ${path}`);
+}
+
+/* ── static reports helpers (mirror of /api/reports) ──────────────────────── */
+function buildStaticDebts(orders: DispatchOrder[]): unknown[] {
+  const groups = new Map<string, unknown>();
+  for (const o of orders) {
+    const isRelevant = o.pay_status === "PENDING" || String(o.payment_method || "").toUpperCase() === "CREDIT";
+    if (!isRelevant) continue;
+    const key = String(o.customer || "WALK-IN CUSTOMER").trim();
+    const g: any = groups.get(key) ?? { customer: key, phone: o.phone, house: o.address, numberOfRows: 0, outstanding: 0, rows: [] };
+    g.rows.push({
+      id: o.id,
+      date: o.date,
+      time: o.time,
+      total: o.total,
+      balance: Number(o.balance) > 0 ? o.balance : o.total,
+      pay_status: o.pay_status,
+      payment_method: o.payment_method,
+      driver: o.driver,
+    });
+    g.numberOfRows = g.rows.length;
+    g.outstanding += Number(o.balance) > 0 ? Number(o.balance) : o.total;
+    groups.set(key, g);
+  }
+  return [...groups.values()].sort((a: any, b: any) => b.outstanding - a.outstanding);
+}
+
+function buildStaticRiderMatrix(orders: DispatchOrder[]): unknown[] {
+  const byDriver = new Map<string, any>();
+  for (const o of orders) {
+    const driver = String(o.driver || "UNASSIGNED");
+    const cur = byDriver.get(driver) ?? { driver, tripsCompleted: 0, grossCashCollected: 0, activePendingDeliveries: 0, totalDispatches: 0 };
+    cur.totalDispatches += 1;
+    if (o.pay_status === "PAID") {
+      cur.tripsCompleted += 1;
+      if (String(o.payment_method || "").toUpperCase() === "CASH") cur.grossCashCollected += o.total;
+    } else {
+      cur.activePendingDeliveries += 1;
+    }
+    byDriver.set(driver, cur);
+  }
+  return [...byDriver.values()].sort((a, b) => b.totalDispatches - a.totalDispatches);
+}
+
+function buildStaticGlovo(orders: DispatchOrder[]): unknown {
+  const gl = orders.filter((o) => o.glovo);
+  const grossRevenue = Math.round(gl.reduce((s, o) => s + o.total, 0) * 100) / 100;
+  const commissionOverhead = Math.round(gl.reduce((s, o) => s + (o.profit / 0.8 - o.profit), 0) * 100) / 100;
+  return { orders: gl.length, grossRevenue, commissionOverhead, netYield: Math.round((grossRevenue - commissionOverhead) * 100) / 100 };
+}
+
+function buildStaticTopSelling(orders: DispatchOrder[]): unknown[] {
+  const byName = new Map<string, { qty: number; revenue: number }>();
+  for (const o of orders) {
+    for (const part of String(o.product || "").split("+")) {
+      const m = part.trim().match(/^(\d+)\s*x\s*(.+)$/);
+      if (!m) continue;
+      const qty = parseInt(m[1], 10) || 1;
+      const name = m[2].trim();
+      if (!name) continue;
+      const cur = byName.get(name) ?? { qty: 0, revenue: 0 };
+      cur.qty += qty;
+      cur.revenue += (o.total * qty) / Math.max(1, o.qty);
+      byName.set(name, cur);
+    }
+  }
+  return [...byName.entries()]
+    .map(([name, v]) => ({ name, qty: v.qty, revenue: Math.round(v.revenue * 100) / 100 }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
 }

@@ -66,6 +66,11 @@ export interface DispatchOrder {
   etims_num?: string;
   cu_serial?: string;
   etims_url?: string;
+  // Debt-repayment bookkeeping — remaining balance on a PENDING/CREDIT row
+  // ("" / missing means "as yet unsettled", treated as the full total) plus
+  // the ISO timestamp of the most recent recorded repayment.
+  balance?: number | string;
+  last_payment_at?: string;
 }
 
 export type OrderRow = DispatchOrder & {
@@ -109,4 +114,58 @@ export interface DashboardSummary {
   paidCount: number;
   pendingCount: number;
   ordersCount: number;
+}
+
+/** A single open debt ledger row grouped under a customer account. */
+export interface DebtRow {
+  id: string;
+  date: string;
+  time: string;
+  total: number;
+  balance: number;
+  pay_status: PayStatus;
+  payment_method: PaymentMethod | "";
+  driver: string;
+}
+
+/** A customer's aggregated open debt account (PAY STATUS = PENDING or CREDIT). */
+export interface DebtAccount {
+  customer: string;
+  phone: string;
+  house: string;
+  numberOfRows: number;
+  outstanding: number;
+  rows: DebtRow[];
+}
+
+/** All-time per-rider performance snapshot for the Rider Matrix widget. */
+export interface RiderMatrixRow {
+  driver: string;
+  tripsCompleted: number;
+  grossCashCollected: number;
+  activePendingDeliveries: number;
+  totalDispatches: number;
+}
+
+/** Glovo channel yield block: gross revenue minus commission overhead. */
+export interface GlovoMetrics {
+  orders: number;
+  grossRevenue: number;
+  commissionOverhead: number;
+  netYield: number;
+}
+
+/** Top-selling aggregate (ranked by volume). */
+export interface TopSellingItem {
+  name: string;
+  qty: number;
+  revenue: number;
+}
+
+/** Full report payload for the unified Reports dashboard widgets. */
+export interface ReportsPayload {
+  debts: DebtAccount[];
+  riderMatrix: RiderMatrixRow[];
+  glovo: GlovoMetrics;
+  topSelling: TopSellingItem[];
 }

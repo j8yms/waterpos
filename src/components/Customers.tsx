@@ -16,6 +16,8 @@ export default function Customers() {
   const [draft, setDraft] = useState(EMPTY);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async (query = "") => {
     try {
@@ -69,6 +71,26 @@ export default function Customers() {
       setMsg({ kind: "err", text: err instanceof Error ? err.message : "Update failed." });
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
+    setMsg(null);
+    try {
+      await api("/api/pos/customers", {
+        method: "POST",
+        body: { action: "deleteCustomer", id: deleteTarget.id },
+      });
+      setMsg({ kind: "ok", text: `"${deleteTarget.location}" was permanently removed.` });
+      setDeleteTarget(null);
+      load(q);
+    } catch (err) {
+      setMsg({ kind: "err", text: err instanceof Error ? err.message : "Delete failed." });
+      setDeleteTarget(null);
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -185,6 +207,15 @@ export default function Customers() {
               >
                 {c.is_active ? "DEACTIVATE" : "REACTIVATE"}
               </button>
+              <button
+                onClick={() => setDeleteTarget(c)}
+                disabled={busy === c.id}
+                className="shrink-0 w-9 h-9 rounded-lg bg-slate-800 text-rose-400 hover:bg-rose-600 hover:text-white text-base transition active:scale-95"
+                title="Delete customer permanently"
+                aria-label="Delete customer"
+              >
+                🗑
+              </button>
             </li>
           ))}
           {customers.length === 0 && (
@@ -192,6 +223,40 @@ export default function Customers() {
           )}
         </ul>
       </section>
+
+      {/* Security double-check delete modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/40 bg-slate-900 p-5 shadow-2xl">
+            <div className="text-lg font-black text-rose-400 mb-1">⚠️ Delete Customer</div>
+            <p className="text-sm text-slate-300 mb-2">
+              You are about to <span className="font-black text-rose-300">permanently delete</span>{" "}
+              <span className="font-black text-slate-100">{deleteTarget.location}</span> from the
+              CUSTOMERS sheet.
+            </p>
+            <p className="text-xs text-slate-500 mb-4">
+              This action removes the full row and cannot be undone. Historical ledger records are
+              left untouched.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteBusy}
+                className="flex-1 h-12 rounded-xl bg-slate-700 text-white font-black active:scale-[0.98] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteBusy}
+                className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black active:scale-[0.98] disabled:opacity-50"
+              >
+                {deleteBusy ? "Deleting…" : "DELETE PERMANENTLY"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

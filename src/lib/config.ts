@@ -68,6 +68,10 @@ export const LEDGER_HEADERS: string[] = [
   "etims_url",
   "created_at",
   "payment_method",
+  // Debt-repayment tracking: remaining balance on the ledger row plus the
+  // ISO timestamp of the last recorded repayment ("" = never repaid).
+  "balance",
+  "last_payment_at",
 ];
 
 export const TABS: Record<string, string[]> = {
@@ -81,6 +85,9 @@ export const TABS: Record<string, string[]> = {
   OUT: LEDGER_HEADERS,
   USERS: ["id", "name", "pin", "role", "active"],
   IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
+  // REPAYMENTS is the cash/M-Pesa cash-flow log appended to on every
+  // recorded debt repayment (action "logRepayment").
+  REPAYMENTS: ["id", "date", "time", "customer", "order_id", "amount", "method", "notes", "created_at"],
 };
 
-export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN"];
+export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS"];

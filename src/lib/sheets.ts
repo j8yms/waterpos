@@ -297,27 +297,24 @@ export async function updateRow(
   const headers = TABS[tabName] ?? [];
   if (!headers.length) throw new Error(`No header definition for tab ${tabName}`);
 
-  const positions: number[] = [];
-  const selectedHeaders: string[] = [];
+  const data: { range: string; values: any[][] }[] = [];
   for (const h of headers) {
     if (h in changes && changes[h] !== undefined) {
-      selectedHeaders.push(h);
-      positions.push(headers.indexOf(h) + 1);
+      const col = headers.indexOf(h) + 1;
+      data.push({
+        range: `${tabName}!${columnName(col)}${rowNumber}:${columnName(col)}${rowNumber}`,
+        values: [[changes[h]]],
+      });
     }
   }
-  if (!positions.length) return;
+  if (!data.length) return;
 
-  const startCol = Math.min(...positions);
-  const values = selectedHeaders.map((h) => changes[h] ?? "");
-  const range = `${tabName}!${columnName(startCol)}${rowNumber}:${columnName(
-    startCol + values.length - 1
-  )}${rowNumber}`;
-
-  await sheets.spreadsheets.values.update({
+  await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId,
-    range,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [values] },
+    requestBody: {
+      valueInputOption: "USER_ENTERED",
+      data,
+    },
   });
 }
 
@@ -473,6 +470,8 @@ export function rowToOrder(r: Record<string, any>, rowNumber: number): DispatchO
     notes: String(r.notes ?? ""),
     created_at: String(r.created_at ?? ""),
     payment_method: String(r.payment_method ?? ""),
+    balance: r.balance === undefined || r.balance === "" ? undefined : toNumber(r.balance),
+    last_payment_at: String(r.last_payment_at ?? ""),
     _row: rowNumber,
   } as DispatchOrder & { _row: number };
 }

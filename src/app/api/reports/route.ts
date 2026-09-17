@@ -1,0 +1,146 @@
+import { requireRole } from "@/lib/auth";
+import { readAllLedgerRows, SheetsConfigError } from "@/lib/sheets";
+import { parseProductLine } from "@/lib/pricing";
+import { GLOVO_COMMISSION } from "@/lib/config";
+import type { DebtAccount, DebtRow, GlovoMetrics, ReportsPayload, RiderMatrixRow, TopSellingItem } from "@/lib/types";
+
+export const runtime = "nodejs";
+
+/**
+ * Unified Reports dashboard payload — four administrative widgets computed
+ * over the FULL ledger (not a date window):
+ *   1. Debts Ledger   — every row with PAY STATUS = PENDING or CREDIT,
+ *                       grouped by customer with per-row balances.
+ *   2. Rider Matrix   — per-rider trips completed, gross cash collected,
+ *                       active pending route deliveries.
+ *   3. Glovo Metrics  — gross channel revenue minus commission overhead.
+ *   4. Top Sellers    — top 5 items ranked by transaction volume.
+ */
+export async function GET(request: Request) {
+  const user = requireRole(request, "management");
+  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+
+  try {
+    const ledger = await readAllLedgerRows();
+    const orders = ledger.map((l) => l.order);
+
+    const debts = buildDebtsLedger(orders);
+    const riderMatrix = buildRiderMatrix(orders);
+    const glovo = buildGlovoMetrics(orders);
+    const topSelling = buildTopSelling(orders);
+
+    const payload: ReportsPayload = { debts, riderMatrix, glovo, topSelling };
+    return Response.json(payload);
+  } catch (err) {
+    return Response.json({ error: errMessage(err) }, { status: 500 });
+  }
+}
+
+/** Outstanding balance for an open row: stored balance, else the full total. */
+function rowBalance(o: { balance?: number | string; total: number; pay_status: string }): number {
+  const b = Number(o.balance);
+  return Number.isFinite(b) && b > 0 ? Math.round(b * 100) / 100 : Math.round(o.total * 100) / 100;
+}
+
+function buildDebtsLedger(orders: any[]): DebtAccount[] {
+  const groups = new Map<string, DebtAccount>();
+  // Query all rows: PAY STATUS = PENDING OR payment type = CREDIT.
+  for (const o of orders) {
+    const isRelevant = o.pay_status === "PENDING" || String(o.payment_method || "").toUpperCase() === "CREDIT";
+    if (!isRelevant) continue;
+    const key = String(o.customer || "WALK-IN CUSTOMER").trim();
+    const existing = groups.get(key);
+    // Keep madeni credit rows but drop discrepancy duplicates by order id.
+    if (existing && existing.rows.some((r) => r.id === o.id)) continue;
+
+    const row: DebtRow = {
+      id: o.id,
+      date: String(o.date ?? ""),
+      time: String(o.time ?? ""),
+      total: Math.round(o.total * 100) / 100,
+      balance: rowBalance(o),
+      pay_status: o.pay_status,
+      payment_method: String(o.payment_method || "") as DebtRow["payment_method"],
+      driver: String(o.driver ?? ""),
+    };
+    const account: DebtAccount = existing ?? {
+      customer: key,
+      phone: String(o.phone ?? ""),
+      house: String(o.address ?? ""),
+      numberOfRows: 0,
+      outstanding: 0,
+      rows: [],
+    };
+    account.rows.push(row);
+    account.outstanding = Math.round((account.outstanding + row.balance) * 100) / 100;
+    account.numberOfRows = account.rows.length;
+    groups.set(key, account);
+  }
+
+  return [...groups.values()].sort((a, b) => b.outstanding - a.outstanding);
+}
+
+function buildRiderMatrix(orders: any[]): RiderMatrixRow[] {
+  const byDriver = new Map<string, RiderMatrixRow>();
+  for (const o of orders) {
+    const driver = String(o.driver || "").trim() || "UNASSIGNED";
+    const cur = byDriver.get(driver) ?? {
+      driver,
+      tripsCompleted: 0,
+      grossCashCollected: 0,
+      activePendingDeliveries: 0,
+      totalDispatches: 0,
+    };
+    cur.totalDispatches += 1;
+    if (o.pay_status === "PAID") {
+      cur.tripsCompleted += 1;
+      if (String(o.payment_method || "").toUpperCase() === "CASH") {
+        cur.grossCashCollected = Math.round((cur.grossCashCollected + o.total) * 100) / 100;
+      }
+    } else {
+      cur.activePendingDeliveries += 1;
+    }
+    byDriver.set(driver, cur);
+  }
+  return [...byDriver.values()].sort((a, b) => b.totalDispatches - a.totalDispatches);
+}
+
+function buildGlovoMetrics(orders: any[]): GlovoMetrics {
+  const glovoOrders = orders.filter((o) => o.glovo);
+  const grossRevenue = Math.round(glovoOrders.reduce((s, o) => s + o.total, 0) * 100) / 100;
+  // Recover the raw (pre-commission) profit to derive true overhead:
+  // storedProfit = rawProfit × (1 − c) ⇒ commission = rawProfit − storedProfit.
+  const commissionOverhead = Math.round(
+    glovoOrders.reduce((s, o) => s + (o.profit / (1 - GLOVO_COMMISSION) - o.profit), 0) * 100
+  ) / 100;
+  return {
+    orders: glovoOrders.length,
+    grossRevenue,
+    commissionOverhead,
+    netYield: Math.round((grossRevenue - commissionOverhead) * 100) / 100,
+  };
+}
+
+function buildTopSelling(orders: any[]): TopSellingItem[] {
+  const byName = new Map<string, { qty: number; revenue: number }>();
+  for (const o of orders) {
+    const lines = parseProductLine(o.product);
+    const totalQty = o.qty || lines.reduce((s, l) => s + l.qty, 0) || 1;
+    for (const line of lines) {
+      const cur = byName.get(line.name) ?? { qty: 0, revenue: 0 };
+      cur.qty += line.qty;
+      // Revenue attributed proportionally by quantity share of the order total.
+      cur.revenue = Math.round((cur.revenue + (o.total * line.qty) / totalQty) * 100) / 100;
+      byName.set(line.name, cur);
+    }
+  }
+  return [...byName.entries()]
+    .map(([name, v]) => ({ name, qty: v.qty, revenue: v.revenue } as TopSellingItem))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+}
+
+function errMessage(err: unknown): string {
+  if (err instanceof SheetsConfigError) return err.message;
+  return err instanceof Error ? err.message : "Reports request failed.";
+}

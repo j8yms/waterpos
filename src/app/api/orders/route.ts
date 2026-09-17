@@ -175,6 +175,10 @@ export async function POST(request: Request) {
       mpesa_code: String(body.mpesa_code ?? body.mpesaCode ?? ""),
       notes,
       created_at: new Date().toISOString(),
+      // New CREDIT / unsettled rows carry a full outstanding balance; settled
+      // cash orders open with a zero balance so the debts ledger is accurate.
+      balance: payStatus === "PENDING" ? Math.round(totals.subtotal * 100) / 100 : 0,
+      last_payment_at: "",
     };
 
     await appendRow("ORDERS", order);

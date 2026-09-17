@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { appendRow, readTab, rowToCustomer, SheetsConfigError, updateRow } from "@/lib/sheets";
+import { appendRow, deleteRow, readTab, rowToCustomer, SheetsConfigError, updateRow } from "@/lib/sheets";
 import { DEFAULT_CUSTOMERS } from "@/lib/config";
 import crypto from "crypto";
 
@@ -54,6 +54,21 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+
+    // Deletion utility — fire a POST with action "deleteCustomer" + target
+    // id to purge the row entirely from the CUSTOMERS sheet tab array. The
+    // whole row dimension is removed so adjacent columns never shift and no
+    // broken reference cells are left behind.
+    if (String(body.action ?? "") === "deleteCustomer") {
+      const id = String(body.id ?? "");
+      if (!id) return Response.json({ error: "Customer id is required." }, { status: 400 });
+      const read = await readTab("CUSTOMERS");
+      const idx = read.rows.findIndex((r) => String(r.id) === String(id));
+      if (idx === -1) return Response.json({ error: "Customer not found." }, { status: 404 });
+      await deleteRow("CUSTOMERS", read.rowNumbers[idx]);
+      return Response.json({ ok: true, deleted: id });
+    }
+
     const location = String(body.location ?? "").trim();
     if (!location) return Response.json({ error: "Location name is required." }, { status: 400 });
 

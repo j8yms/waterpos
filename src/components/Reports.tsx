@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, clearAuth, currentUser } from "@/lib/client";
+import type { DebtAccount, GlovoMetrics, RiderMatrixRow, TopSellingItem } from "@/lib/types";
 import type { DispatchOrder } from "@/lib/types";
 import { money, nairobiDate } from "@/lib/pricing";
 import { StatCard } from "@/components/ui";
@@ -42,6 +43,15 @@ export default function Reports() {
   const [riders, setRiders] = useState<RiderMetrics[]>([]);
   const [credit, setCredit] = useState<CreditAccount[]>([]);
   const [creditTotal, setCreditTotal] = useState(0);
+  const [debts, setDebts] = useState<DebtAccount[]>([]);
+  const [riderMatrix, setRiderMatrix] = useState<RiderMatrixRow[]>([]);
+  const [glovo, setGlovo] = useState<GlovoMetrics | null>(null);
+  const [topSelling, setTopSelling] = useState<TopSellingItem[]>([]);
+  const [repaying, setRepaying] = useState<string | null>(null);
+  const [repayAmount, setRepayAmount] = useState("");
+  const [repayMethod, setRepayMethod] = useState<"CASH" | "MPESA">("CASH");
+  const [repayBusy, setRepayBusy] = useState(false);
+  const [repayMsg, setRepayMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -73,6 +83,20 @@ export default function Reports() {
     } catch {
       /* analytics blocks are additive */
     }
+    try {
+      const reports = await api<{
+        debts: DebtAccount[];
+        riderMatrix: RiderMatrixRow[];
+        glovo: GlovoMetrics;
+        topSelling: TopSellingItem[];
+      }>(`/api/reports`);
+      setDebts(reports.debts);
+      setRiderMatrix(reports.riderMatrix);
+      setGlovo(reports.glovo);
+      setTopSelling(reports.topSelling);
+    } catch {
+      /* reports widgets are additive */
+    }
     setLoading(false);
   }, [day, period]);
 
@@ -83,6 +107,40 @@ export default function Reports() {
   function logout() {
     clearAuth();
     router.replace("/");
+  }
+
+  async function recordRepayment(account: DebtAccount) {
+    const amount = parseFloat(repayAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setRepayMsg({ kind: "err", text: "Enter a positive repayment amount." });
+      return;
+    }
+    setRepayBusy(true);
+    setRepayMsg(null);
+    try {
+      const res = await api<{
+        ok: boolean;
+        applied: number;
+        excess: number;
+        settledRows: string[];
+      }>("/api/repayments", {
+        method: "POST",
+        body: { action: "logRepayment", customer: account.customer, amount, method: repayMethod },
+      });
+      setRepayMsg({
+        kind: "ok",
+        text: `${money(res.applied)} recorded for ${account.customer}${
+          res.settledRows.length ? ` — ${res.settledRows.length} order(s) settled.` : "."
+        }`,
+      });
+      setRepaying(null);
+      setRepayAmount("");
+      load();
+    } catch (e) {
+      setRepayMsg({ kind: "err", text: e instanceof Error ? e.message : "Repayment failed." });
+    } finally {
+      setRepayBusy(false);
+    }
   }
 
   const dayTotal = useMemo(() => orders.reduce((s, o) => s + o.total, 0), [orders]);
@@ -178,6 +236,223 @@ export default function Reports() {
           <StatCard label="Monthly Cost Basis" value={money(monthCost)} accent="text-rose-400" />
           <StatCard label="Monthly Dispatch Count" value={String(monthOrders.length)} accent="text-slate-100" />
           <StatCard label="Madeni Outstanding" value={money(creditTotal)} accent="text-amber-300" />
+        </section>
+
+        {repayMsg && (
+          <div
+            className={`px-3 py-2 rounded-xl text-sm font-bold ${
+              repayMsg.kind === "ok"
+                ? "bg-emerald-500/15 border border-emerald-500/40 text-emerald-300"
+                : "bg-rose-500/15 border border-rose-500/40 text-rose-300"
+            }`}
+          >
+            {repayMsg.text}
+          </div>
+        )}
+
+        {/* ── 1. Debts Ledger & Repayment Node ─────────────────────────────── */}
+        <section className="rounded-2xl border border-amber-500/30 bg-slate-950 overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-amber-500/20 text-xs uppercase tracking-wider text-amber-300 font-black flex items-baseline justify-between gap-2">
+            <span>Debts Ledger &amp; Repayment Node</span>
+            <span className="text-amber-200/80 normal-case tracking-normal text-[11px]">
+              {debts.reduce((s, d) => s + d.outstanding, 0) > 0
+                ? `Total open ${money(debts.reduce((s, d) => s + d.outstanding, 0))}`
+                : "All caught up"}
+            </span>
+          </div>
+          {debts.length === 0 && (
+            <div className="px-3 py-6 text-center text-slate-600 text-sm">
+              No rows with PAY STATUS = PENDING or payment type = CREDIT.
+            </div>
+          )}
+          <div className="max-h-[60vh] overflow-y-auto divide-y divide-slate-800">
+            {debts.map((d) => (
+              <div key={d.customer} className="px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-black text-slate-100 truncate">{d.customer}</div>
+                    <div className="text-[11px] text-slate-500 truncate">
+                      {d.phone || "—"} · {d.house || "no house"} · {d.numberOfRows} open order
+                      {d.numberOfRows === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 font-black text-amber-300">
+                    {money(d.outstanding)}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (repaying === d.customer) {
+                        setRepaying(null);
+                      } else {
+                        setRepaying(d.customer);
+                        setRepayAmount("");
+                        setRepayMsg(null);
+                      }
+                    }}
+                    className="shrink-0 px-3 h-9 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 font-black text-xs transition"
+                  >
+                    {repaying === d.customer ? "Cancel" : "Record Repayment"}
+                  </button>
+                </div>
+
+                {/* Inline repayment input */}
+                {repaying === d.customer && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-slate-900 border border-amber-500/20 p-2">
+                    <div className="flex gap-1 rounded-lg bg-slate-800 p-0.5">
+                      {(["CASH", "MPESA"] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setRepayMethod(m)}
+                          className={`px-3 h-8 rounded-md text-xs font-black transition ${
+                            repayMethod === m ? "bg-sky-500 text-white" : "text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={repayAmount}
+                      onChange={(e) => setRepayAmount(e.target.value)}
+                      placeholder="Amount…"
+                      className="h-9 flex-1 min-w-[120px] px-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-sm"
+                    />
+                    <button
+                      onClick={() => recordRepayment(d)}
+                      disabled={repayBusy}
+                      className="px-4 h-9 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition disabled:opacity-50"
+                    >
+                      {repayBusy ? "Applying…" : "Apply"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Open rows for this customer */}
+                {repaying === d.customer && (
+                  <div className="mt-1.5 space-y-1">
+                    {d.rows.map((r) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-900/60 text-[11px]"
+                      >
+                        <span className="text-slate-500 font-bold shrink-0">
+                          {r.date.slice(5)} {r.time}
+                        </span>
+                        <span className="flex-1 truncate text-slate-300">
+                          {r.payment_method || "—"} · {r.driver}
+                        </span>
+                        <span className="shrink-0 text-slate-400 font-bold">{money(r.balance)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── 2. Rider Performance Matrix ──────────────────────────────────── */}
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-slate-800 text-xs uppercase tracking-wider text-slate-400 font-black">
+            Rider Performance Matrix · all time · {riderMatrix.length} riders
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <th className="px-3 py-2 font-black">Rider</th>
+                  <th className="px-2 py-2 font-black text-right">Trips Completed</th>
+                  <th className="px-2 py-2 font-black text-right">Gross Cash Collected</th>
+                  <th className="px-3 py-2 font-black text-right">Active Pending Deliveries</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {riderMatrix.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-6 text-center text-slate-600 text-sm">
+                      No dispatch activity on record.
+                    </td>
+                  </tr>
+                )}
+                {riderMatrix.map((r) => (
+                  <tr key={r.driver} className="hover:bg-slate-900">
+                    <td className="px-3 py-2 font-bold text-slate-100">{r.driver}</td>
+                    <td className="px-2 py-2 text-right text-emerald-400 font-black">{r.tripsCompleted}</td>
+                    <td className="px-2 py-2 text-right text-slate-200">{money(r.grossCashCollected)}</td>
+                    <td className="px-3 py-2 text-right text-rose-400 font-black">{r.activePendingDeliveries}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ── 3. Glovo Performance Metrics ─────────────────────────────────── */}
+        <section className="rounded-2xl border border-purple-500/30 bg-slate-950 overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-purple-500/20 text-xs uppercase tracking-wider text-purple-300 font-black">
+            Glovo Performance Metrics · net channel yield
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3">
+            <StatCard
+              label="Gross Channel Revenue"
+              value={glovo ? money(glovo.grossRevenue) : "—"}
+              accent="text-purple-300"
+            />
+            <StatCard
+              label="Commission Overhead (20%)"
+              value={glovo ? money(glovo.commissionOverhead) : "—"}
+              accent="text-rose-400"
+            />
+            <StatCard
+              label="Net Channel Yield"
+              value={glovo ? money(glovo.netYield) : "—"}
+              accent="text-emerald-400"
+            />
+          </div>
+          <div className="px-3 pb-3 text-[11px] text-slate-500">
+            {glovo ? `${glovo.orders} Glovo-tagged order(s) all time.` : "No Glovo records yet."}
+          </div>
+        </section>
+
+        {/* ── 4. Top 5 Best Selling Items ──────────────────────────────────── */}
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-slate-800 text-xs uppercase tracking-wider text-slate-400 font-black">
+            Top 5 Best Selling Items · by volume
+          </div>
+          <div className="p-3 space-y-2">
+            {topSelling.length === 0 && (
+              <div className="text-center text-slate-600 text-sm py-4">No product volume on record.</div>
+            )}
+            {topSelling.map((t, i) => {
+              const max = Math.max(1, ...topSelling.map((x) => x.qty));
+              const pct = Math.round((t.qty / max) * 100);
+              return (
+                <div key={t.name} className="flex items-center gap-2">
+                  <div className="w-5 shrink-0 text-sm font-black text-slate-500">{i + 1}</div>
+                  <div className="w-40 shrink-0">
+                    <div className="text-xs font-bold text-slate-200 truncate">{t.name}</div>
+                  </div>
+                  <div className="flex-1 h-5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        i === 0 ? "bg-emerald-500" : "bg-sky-500"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="w-16 shrink-0 text-right text-sm font-black text-slate-100">
+                    {t.qty}
+                  </div>
+                  <div className="w-24 shrink-0 text-right text-[11px] text-slate-500 font-bold">
+                    {money(t.revenue)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         {/* ── Rider Performance Ledger ─────────────────────────────────────── */}
