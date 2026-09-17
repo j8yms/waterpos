@@ -42,7 +42,7 @@ export interface CartItem {
 
 export type PayStatus = "PAID" | "PENDING";
 
-export type PaymentMethod = "CASH" | "MPESA" | "GLOVO";
+export type PaymentMethod = "CASH" | "MPESA" | "GLOVO" | "CREDIT";
 
 export interface DispatchOrder {
   id: string;

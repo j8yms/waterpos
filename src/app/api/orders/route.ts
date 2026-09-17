@@ -99,17 +99,23 @@ export async function POST(request: Request) {
     const driver = String(body.driver ?? "").trim();
     const glovo = Boolean(body.glovo);
     const paymentMethodRaw = String(body.paymentMethod ?? "").trim().toUpperCase();
-    const paymentMethod: "CASH" | "MPESA" | "GLOVO" | "" =
-      paymentMethodRaw === "CASH" || paymentMethodRaw === "MPESA" || paymentMethodRaw === "GLOVO"
+    const paymentMethod: "CASH" | "MPESA" | "GLOVO" | "CREDIT" | "" =
+      paymentMethodRaw === "CASH" ||
+      paymentMethodRaw === "MPESA" ||
+      paymentMethodRaw === "GLOVO" ||
+      paymentMethodRaw === "CREDIT"
         ? paymentMethodRaw
         : "";
-    // CASH and M-PESA settle instantly; GLOVO-channel orders stay PENDING
-    // until Glovo pays out (explicitly passed by the client via payStatus).
-    const payStatus: "PAID" | "PENDING" = glovo
-      ? "PENDING"
-      : String(body.payStatus ?? body.pay_status ?? "PENDING").toUpperCase() === "PAID"
+    // CASH settles instantly; M-PESA and GLOVO-channel orders stay PENDING
+    // until payment clears; CREDIT (madeni) stays PENDING until collected.
+    const payStatus: "PAID" | "PENDING" =
+      paymentMethod === "CASH" && !glovo
         ? "PAID"
-        : "PENDING";
+        : paymentMethod === "CREDIT"
+          ? "PENDING"
+          : String(body.payStatus ?? body.pay_status ?? "PENDING").toUpperCase() === "PAID"
+            ? "PAID"
+            : "PENDING";
     const notes = String(body.notes ?? "");
     const requested = Array.isArray(body.items) ? body.items : [];
 

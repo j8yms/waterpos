@@ -162,7 +162,7 @@ export function createOrder(body: {
   total?: number;
   glovo?: boolean;
   pay_status?: "PAID" | "PENDING";
-  payment_method?: "CASH" | "MPESA" | "GLOVO" | "";
+  payment_method?: "CASH" | "MPESA" | "GLOVO" | "CREDIT" | "";
   mpesa_code?: string;
   driver?: string;
   profit?: number;

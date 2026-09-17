@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, cacheCustomers, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
-import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, PaymentMethod, Product } from "@/lib/types";
-import { money, nairobiDate, computeTicket } from "@/lib/pricing";
+import { api, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
+import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
+import { money, nairobiDate, computeTicket, parseProductLine } from "@/lib/pricing";
+import { DEFAULT_RIDERS } from "@/lib/config";
 import ProductSearch from "./ProductSearch";
-import CustomerSearch from "./CustomerSearch";
 import TransactionTable from "./TransactionTable";
 import CommandMatrix from "./CommandMatrix";
 import PrintPrompt from "./PrintPrompt";
@@ -15,20 +15,23 @@ import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
 import { printReceipt, receiptFromOrder } from "@/lib/print";
 
+const WALK_IN = "WALK-IN";
+
 export default function SalesFloor() {
   const router = useRouter();
   const me = currentUser();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [drivers, setDrivers] = useState<{ id: string; name: string; role: string }[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [glovo, setGlovo] = useState(false);
   const [customer, setCustomer] = useState({ location: "", phone: "", address: "" });
-  const [driver, setDriver] = useState("");
+  const [driver, setDriver] = useState(WALK_IN);
+  const [newRiderName, setNewRiderName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [charging, setCharging] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [checkoutMethod, setCheckoutMethod] = useState<"CASH" | "MPESA" | null>(null);
+  const [checkoutMethod, setCheckoutMethod] = useState<"CASH" | "MPESA" | "CREDIT" | null>(null);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
   const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
   const [etimsOn, setEtimsOn] = useState(false);
@@ -47,15 +50,6 @@ export default function SalesFloor() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Product load failed.";
       setErr(message.includes("missing") || message.includes("Configure") ? message : "Offline product cache active.");
-    }
-  }, []);
-
-  const loadDrivers = useCallback(async () => {
-    try {
-      const res = await api<{ staff: { id: string; name: string; role: string }[] }>("/api/staff");
-      setDrivers(res.staff.filter((s) => s.role === "rider"));
-    } catch {
-      /* drivers optional */
     }
   }, []);
 
@@ -83,14 +77,10 @@ export default function SalesFloor() {
       setProducts(cached);
     }
     loadProducts();
-    loadDrivers();
     loadSummary();
     loadTodayOrders();
     flushPendingOps();
-    api<{ customers: any[] }>("/api/pos/customers")
-      .then((r) => cacheCustomers(r.customers))
-      .catch(() => {});
-  }, [loadProducts, loadDrivers, loadSummary, loadTodayOrders]);
+  }, [loadProducts, loadSummary, loadTodayOrders]);
 
   useEffect(() => {
     loadSummary();
@@ -125,35 +115,80 @@ export default function SalesFloor() {
     });
   }
 
-  function voidOrder() {
+  async function voidOrder() {
+    if (editingId) {
+      try {
+        await api(`/api/orders/${editingId}`, { method: "DELETE" });
+      } catch {
+        /* void failure surfaced via reload below */
+      }
+      setEditingId(null);
+      setRefreshedAt(Date.now());
+      loadProducts();
+    }
     setCart([]);
     setSelected(null);
+    setCustomer({ location: "", phone: "", address: "" });
   }
 
-  function openCheckout(method: "CASH" | "MPESA" | null) {
+  /** Reload a saved PENDING sale back into the active cart for edit/complete/void. */
+  function reloadOrder(o: DispatchOrder) {
+    const lines = products
+      ? parseProductLine(o.product)
+          .map((l) => {
+            const product = products.find((p) => p.name.trim().toLowerCase() === l.name.trim().toLowerCase());
+            return product
+              ? { productId: product.id, name: product.name, unitPrice: product.selling_price, qty: l.qty, color: product.color }
+              : null;
+          })
+          .filter((x): x is CartItem => x !== null)
+      : [];
+    if (!lines.length) return;
+    setCart(lines);
+    setSelected(null);
+    setGlovo(o.glovo);
+    setCustomer({ location: o.customer, phone: o.phone, address: o.address });
+    setDriver(o.driver || WALK_IN);
+    setNewRiderName("");
+    setEditingId(o.id);
+    setErr(null);
+  }
+
+  function openCheckout(method: "CASH" | "MPESA" | "CREDIT" | null) {
     if (!cart.length) return;
     setCheckoutMethod(method);
     setCheckoutOpen(true);
   }
 
+  function riderIsSet(): boolean {
+    const rider = driver === "NEW_RIDER" ? newRiderName.trim() : driver;
+    return rider.length > 0;
+  }
+
   async function charge(payment: {
-    paymentMethod: "CASH" | "MPESA";
+    paymentMethod: "CASH" | "MPESA" | "CREDIT";
     tendered: number;
     change: number;
     mpesaCode: string;
+    customerName: string;
+    phone: string;
+    location: string;
+    print: boolean;
   }) {
-    if (!cart.length || !driver) return;
+    if (!cart.length || !riderIsSet() || charging) return;
     setCharging(true);
     setErr(null);
-    // Glovo flips the payout mapping: the order is remitted via the Glovo
-    // channel (PENDING until Glovo pays out) even though the till still
-    // records the customer's actual tender (CASH or M-PESA).
+    const rider = driver === "NEW_RIDER" ? newRiderName.trim() : driver;
+    // CREDIT (madeni) and GLOVO stay PENDING in the ledger.
     const glovoFlag = glovo;
-    const payStatus: "PAID" | "PENDING" = glovoFlag ? "PENDING" : "PAID";
+    const payStatus: "PAID" | "PENDING" =
+      payment.paymentMethod === "CREDIT" ? "PENDING" : glovoFlag ? "PENDING" : "PAID";
     try {
       const body = {
-        driver,
-        customer: customer.location,
+        driver: rider,
+        customer: payment.customerName || payment.location || customer.location,
+        phone: payment.phone || customer.phone,
+        address: payment.location || customer.address,
         glovo: glovoFlag,
         paymentMethod: payment.paymentMethod,
         payStatus,
@@ -167,14 +202,28 @@ export default function SalesFloor() {
         method: "POST",
         body,
       });
-      setSavedOrder(res.order);
-      setSavedItems(
-        cart.map((it) => ({ name: it.name, qty: it.qty, unitPrice: it.unitPrice }))
-      );
+      // If this cart was reloaded from a saved pending sale, purge the
+      // superseded ledger row so no duplicate quantities linger.
+      if (editingId && editingId !== res.order.id) {
+        try {
+          await api(`/api/orders/${editingId}`, { method: "DELETE" });
+        } catch {
+          /* superseded row already gone — ignore */
+        }
+      }
+      if (payment.print) {
+        setSavedOrder(res.order);
+        setSavedItems(cart.map((it) => ({ name: it.name, qty: it.qty, unitPrice: it.unitPrice })));
+      } else {
+        setSavedOrder(null);
+        setSavedItems([]);
+      }
       setCart([]);
       setSelected(null);
       setCustomer({ location: "", phone: "", address: "" });
-      setDriver("");
+      setDriver(WALK_IN);
+      setNewRiderName("");
+      setEditingId(null);
       setCheckoutOpen(false);
       setGlovo(false);
       setRefreshedAt(Date.now());
@@ -267,27 +316,39 @@ export default function SalesFloor() {
           )}
         </nav>
 
-        {/* Top horizontal search banner (Aronium product search location) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_220px] gap-2 mt-2 pb-2 items-start">
+        {/* Top horizontal search banner: product search + rider assignment only */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-2 mt-2 pb-2 items-start">
           <ProductSearch products={products} onAdd={addToCart} />
-          <CustomerSearch value={customer} onChange={setCustomer} />
           <div>
             <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">
               Assign Rider
             </label>
             <select
               value={driver}
-              onChange={(e) => setDriver(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setDriver(v);
+                if (v === "NEW_RIDER") setNewRiderName("");
+              }}
               className="w-full h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
             >
-              <option value="">Select rider…</option>
-              {drivers.map((d) => (
-                <option key={d.id} value={d.name}>
-                  {d.name}
+              <option value={WALK_IN}>WALK-IN (no rider)</option>
+              {DEFAULT_RIDERS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
                 </option>
               ))}
-              <option value="WALK-IN">WALK-IN (no rider)</option>
+              <option value="NEW_RIDER">New rider…</option>
             </select>
+            {driver === "NEW_RIDER" && (
+              <input
+                value={newRiderName}
+                onChange={(e) => setNewRiderName(e.target.value)}
+                placeholder="Enter rider name"
+                autoFocus
+                className="mt-1.5 w-full h-11 px-3 rounded-xl bg-slate-900 border border-amber-600/50 focus:border-amber-500 outline-none text-slate-100 text-sm placeholder:text-slate-600"
+              />
+            )}
           </div>
         </div>
       </header>
@@ -338,29 +399,51 @@ export default function SalesFloor() {
                   No dispatches yet today.
                 </div>
               )}
-              {todayOrders.map((o) => (
-                <div
-                  key={o.id}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-bold text-slate-100 truncate leading-tight">
-                      {o.customer}
-                    </div>
-                    <div className="text-[11px] text-slate-400 truncate">
-                      {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-sm font-black text-emerald-400">{money(o.total)}</div>
-                    {isAdmin && (
-                      <div className="text-[11px] text-slate-500 font-bold">
-                        +{money(o.profit)} profit
+              {todayOrders.map((o) => {
+                const pending = o.pay_status === "PENDING";
+                return (
+                  <div
+                    key={o.id}
+                    onClick={pending ? () => reloadOrder(o) : undefined}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
+                      pending
+                        ? "border-amber-600/40 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10"
+                        : "border-slate-800 bg-slate-900"
+                    } ${editingId === o.id ? "ring-1 ring-sky-400" : ""}`}
+                    title={pending ? "Tap to reload this pending sale into the active cart" : undefined}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-sm font-bold truncate leading-tight ${pending ? "text-amber-200" : "text-slate-100"}`}>
+                        {o.customer}
                       </div>
-                    )}
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`text-sm font-black ${pending ? "text-amber-300" : "text-emerald-400"}`}>
+                        {money(o.total)}
+                      </div>
+                      {isAdmin && (
+                        <div className="text-[11px] text-slate-500 font-bold">
+                          +{money(o.profit)} profit
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        printReceipt(receiptFromOrder(o, { operator: me?.name || "POS" }));
+                      }}
+                      className="shrink-0 w-9 h-9 rounded-lg bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-sm transition active:scale-95"
+                      title="Reprint receipt"
+                      aria-label="Reprint receipt"
+                    >
+                      🖨️
+                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             {todayOrders.length > 0 && (
               <div className="mt-2 pt-2 border-t border-slate-800 flex items-baseline justify-between">
@@ -400,6 +483,10 @@ export default function SalesFloor() {
           onRegister={charge}
           charging={charging}
           total={computeTicket(cart, glovo).subtotal}
+          driver={driver === "NEW_RIDER" ? newRiderName.trim() || "NEW_RIDER" : driver}
+          initialCustomerName={customer.location}
+          initialPhone={customer.phone}
+          initialLocation={customer.address}
           glovo={glovo}
           setGlovo={setGlovo}
           etimsOn={etimsOn}

@@ -156,3 +156,20 @@ export function orderSummaryPublic(order: DispatchOrder) {
 export function normalizeAmountInput(v: any): number {
   return toNumber(v);
 }
+
+/**
+ * Parse the ledger's compact product summary ("2 x QUENCHER 18.9L + 1 x ...")
+ * back into structured line items so a saved order can be reloaded into the
+ * active cart for editing / completion.
+ */
+export function parseProductLine(raw: string): { qty: number; name: string }[] {
+  const items: { qty: number; name: string }[] = [];
+  for (const part of String(raw || "").split("+")) {
+    const m = part.trim().match(/^(\d+)\s*x\s*(.+)$/);
+    if (!m) continue;
+    const qty = parseInt(m[1], 10) || 1;
+    const name = m[2].trim();
+    if (name) items.push({ qty, name });
+  }
+  return items;
+}

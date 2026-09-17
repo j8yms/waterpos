@@ -321,6 +321,42 @@ export async function updateRow(
   });
 }
 
+/**
+ * Permanently remove a data row (not the header) from a tab. Used by void /
+ * catalog-power operations so stale pending orders and removed products are
+ * fully purged rather than hidden.
+ */
+export async function deleteRow(tabName: string, rowNumber: number): Promise<void> {
+  const sheets = await getSheets();
+  const spreadsheetId = getSpreadsheetId();
+
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets.properties(sheetId,title)",
+  });
+  const sheet = meta.data.sheets?.find((s) => s.properties?.title === tabName);
+  const sheetId = sheet?.properties?.sheetId;
+  if (sheetId == null) throw new Error(`Sheet ${tabName} not found.`);
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowNumber - 1,
+              endIndex: rowNumber,
+            },
+          },
+        },
+      ],
+    },
+  });
+}
+
 export async function seedInitialData(): Promise<boolean> {
   const required = ["PRODUCTS", "CUSTOMERS"];
   let wrote = false;

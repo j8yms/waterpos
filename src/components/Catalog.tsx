@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, clearAuth, currentUser } from "@/lib/client";
+import { api, cacheProducts, clearAuth, currentUser } from "@/lib/client";
 import { money } from "@/lib/pricing";
 import { BigButton } from "@/components/ui";
 import type { Product } from "@/lib/types";
@@ -29,6 +29,9 @@ export default function Catalog() {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [armedId, setArmedId] = useState<string | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const armedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -89,6 +92,55 @@ export default function Catalog() {
   function close() {
     setShowForm(false);
     setDraft(EMPTY);
+  }
+
+  // --- Admin delete (long-press / right-click arms the trash overlay) ---
+  function disarm() {
+    setArmedId(null);
+    if (armedTimer.current) clearTimeout(armedTimer.current);
+  }
+
+  function arm(id: string) {
+    setArmedId(id);
+    if (armedTimer.current) clearTimeout(armedTimer.current);
+    armedTimer.current = setTimeout(disarm, 4000);
+  }
+
+  function onTilePointerDown(id: string) {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => arm(id), 600);
+  }
+
+  function onTilePointerUp() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (pressTimer.current) clearTimeout(pressTimer.current);
+      if (armedTimer.current) clearTimeout(armedTimer.current);
+    };
+  }, []);
+
+  async function deleteProduct(p: Product) {
+    if (armedId !== p.id) return;
+    setBusy(true);
+    setMsg(null);
+    disarm();
+    try {
+      await api(`/api/pos/products/${p.id}`, { method: "DELETE" });
+      const remaining = products.filter((x) => x.id !== p.id);
+      setProducts(remaining);
+      cacheProducts(remaining);
+      setMsg({ kind: "ok", text: `"${p.name}" purged from the catalog.` });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to delete product." });
+    } finally {
+      setBusy(false);
+    }
   }
 
   const field = (label: string, key: keyof Draft, opts: { inputMode?: "decimal"; type?: string } = {}) => (
@@ -214,7 +266,14 @@ export default function Catalog() {
             <div
               key={p.id}
               style={{ backgroundColor: p.color }}
-              className="relative rounded-2xl p-3 text-left text-white shadow-lg min-h-[104px] flex flex-col justify-between"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                arm(p.id);
+              }}
+              onPointerDown={() => onTilePointerDown(p.id)}
+              onPointerUp={onTilePointerUp}
+              onPointerLeave={onTilePointerUp}
+              className="relative rounded-2xl p-3 text-left text-white shadow-lg min-h-[104px] flex flex-col justify-between select-none"
             >
               <div>
                 <div className="text-sm font-black leading-tight drop-shadow">{p.name}</div>
@@ -228,6 +287,26 @@ export default function Catalog() {
                   cost {money(p.wholesale_cost)} / unit
                 </div>
               </div>
+
+              {/* Admin delete overlay — long-press or right-click to arm */}
+              {armedId === p.id && (
+                <div className="absolute inset-0 rounded-2xl bg-rose-950/85 backdrop-blur-sm flex items-center justify-center gap-2 p-2">
+                  <button
+                    onClick={() => deleteProduct(p)}
+                    disabled={busy}
+                    className="h-11 px-3 flex-1 rounded-xl bg-rose-500 text-white font-black text-xs hover:bg-rose-400 active:scale-95 transition"
+                  >
+                    {busy ? "…" : "🗑 DELETE"}
+                  </button>
+                  <button
+                    onClick={disarm}
+                    disabled={busy}
+                    className="h-11 px-3 rounded-xl bg-slate-700 text-white font-black text-xs hover:bg-slate-600 active:scale-95 transition"
+                  >
+                    Keep
+                  </button>
+                </div>
+              )}
             </div>
           ))}
           {products.length === 0 && (

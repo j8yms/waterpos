@@ -72,7 +72,9 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
       ? "M-PESA"
       : data.paymentMethod === "GLOVO"
         ? "GLOVO ORDER"
-        : "CASH"
+        : data.paymentMethod === "CREDIT"
+          ? "CREDIT"
+          : "CASH"
     : null;
   const paymentLine = paymentLabel
     ? `<pre>${p("METHOD")} ${paymentLabel}</pre>`
@@ -141,7 +143,9 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
 
 /**
  * Print via a hidden, fully-isolated iframe so only the receipt template prints,
- * never the POS chrome.
+ * never the POS chrome. Cross-device safe: iOS/Android Chrome can auto-pop the
+ * print preview when a separate tab opens, so instead of window.open we attach
+ * a dedicated print handler to the injected iframe's own window.
  */
 export function printReceipt(data: ReceiptData): void {
   const html = buildReceiptHtml(data);
@@ -156,6 +160,25 @@ export function printReceipt(data: ReceiptData): void {
   frame.style.border = "0";
 
   document.body.appendChild(frame);
+
+  const fire = () => {
+    const win = frame.contentWindow;
+    if (!win) {
+      frame.remove();
+      return;
+    }
+    win.focus();
+    // iOS Safari needs the print call from inside the iframe context; using a
+    // tiny scripted handler is more reliable than a bare win.print() on older
+    // WebKit. Keep a blank catch so no device ever dead-ends the till.
+    try {
+      win.print();
+    } catch {
+      /* some embedded webviews ignore iframe.print() */
+    }
+    setTimeout(() => frame.remove(), 1200);
+  };
+
   const doc = frame.contentDocument;
   if (!doc) {
     frame.remove();
@@ -166,12 +189,12 @@ export function printReceipt(data: ReceiptData): void {
   doc.write(html);
   doc.close();
 
-  // Thermal drivers often need a moment to settle.
-  setTimeout(() => {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-    setTimeout(() => frame.remove(), 800);
-  }, 80);
+  if (frame.contentWindow?.addEventListener) {
+    frame.contentWindow.addEventListener("load", fire);
+  }
+  // Thermal drivers / mobile webviews often need a moment to settle; fire even
+  // if the synthetic load event never arrives.
+  setTimeout(fire, 120);
 }
 
 export function receiptFromOrder(

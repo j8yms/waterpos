@@ -3,9 +3,19 @@
 import { useEffect, useState } from "react";
 import { money } from "@/lib/pricing";
 import { BigButton, Toggle } from "@/components/ui";
-import type { PaymentMethod } from "@/lib/types";
 
 const QUICK_TILES = [200, 500, 1000, 2000];
+
+export interface CheckoutPayload {
+  paymentMethod: "CASH" | "MPESA" | "CREDIT";
+  tendered: number;
+  change: number;
+  mpesaCode: string;
+  customerName: string;
+  phone: string;
+  location: string;
+  print: boolean;
+}
 
 export default function CheckoutModal({
   open,
@@ -13,6 +23,10 @@ export default function CheckoutModal({
   onRegister,
   charging,
   total,
+  driver,
+  initialCustomerName = "",
+  initialPhone = "",
+  initialLocation = "",
   glovo,
   setGlovo,
   etimsOn,
@@ -23,54 +37,77 @@ export default function CheckoutModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onRegister: (payload: {
-    paymentMethod: "CASH" | "MPESA";
-    tendered: number;
-    change: number;
-    mpesaCode: string;
-  }) => void;
+  onRegister: (payload: CheckoutPayload) => void;
   charging: boolean;
   total: number;
+  driver: string;
+  initialCustomerName?: string;
+  initialPhone?: string;
+  initialLocation?: string;
   glovo: boolean;
   setGlovo: (v: boolean) => void;
   etimsOn: boolean;
   setEtimsOn: (v: boolean) => void;
   kraPin: string;
   setKraPin: (v: string) => void;
-  initialMethod?: "CASH" | "MPESA" | null;
+  initialMethod?: "CASH" | "MPESA" | "CREDIT" | null;
 }) {
-  const [method, setMethod] = useState<"CASH" | "MPESA" | null>(null);
+  const [method, setMethod] = useState<"CASH" | "MPESA" | "CREDIT" | null>(null);
   const [tendered, setTendered] = useState("");
   const [mpesaCode, setMpesaCode] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
 
   useEffect(() => {
     if (open) {
       setMethod(initialMethod);
       setTendered("");
       setMpesaCode("");
+      setCustomerName(initialCustomerName);
+      setPhone(initialPhone);
+      setLocation(initialLocation);
     }
-  }, [open, initialMethod]);
+  }, [open, initialMethod, initialCustomerName, initialPhone, initialLocation]);
 
   if (!open) return null;
 
+  const isDispatch = driver.trim().length > 0 && driver.trim().toUpperCase() !== "WALK-IN";
   const tenderedNum = Number(tendered) || 0;
   const change = method === "CASH" ? Math.max(0, tenderedNum - total) : 0;
   const insufficient = method === "CASH" && tenderedNum > 0 && tenderedNum < total;
+  const creditNeedsName = method === "CREDIT" && customerName.trim().length === 0;
   const registerReady =
-    !!method && !charging && !(total > 0 && method === "CASH" && tenderedNum < total);
+    !!method &&
+    !charging &&
+    !creditNeedsName &&
+    !(total > 0 && method === "CASH" && tenderedNum < total);
 
-  function select(next: "CASH" | "MPESA") {
+  function select(next: "CASH" | "MPESA" | "CREDIT") {
     setMethod(next);
+  }
+
+  function payload(print: boolean): CheckoutPayload {
+    return {
+      paymentMethod: method ?? "CASH",
+      tendered: method === "CASH" ? tenderedNum : 0,
+      change,
+      mpesaCode: mpesaCode.trim(),
+      customerName: customerName.trim(),
+      phone: phone.trim(),
+      location: location.trim(),
+      print,
+    };
   }
 
   function register() {
     if (!method || !registerReady) return;
-    onRegister({
-      paymentMethod: method,
-      tendered: method === "CASH" ? tenderedNum : 0,
-      change,
-      mpesaCode: mpesaCode.trim(),
-    });
+    onRegister(payload(true));
+  }
+
+  function completeWithoutPrint() {
+    if (!method || !registerReady) return;
+    onRegister(payload(false));
   }
 
   return (
@@ -81,7 +118,9 @@ export default function CheckoutModal({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-black text-slate-100">Checkout</h2>
-            <p className="text-xs text-slate-500">Select payment method to complete dispatch</p>
+            <p className="text-xs text-slate-500">
+              {isDispatch ? `Dispatch · ${driver}` : "Walk-in customer"}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -92,8 +131,8 @@ export default function CheckoutModal({
           </button>
         </div>
 
-        {/* Payment method tiles: CASH and M-PESA are the only payment methods */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Payment method tiles: CASH, M-PESA and CREDIT */}
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => select("CASH")}
             className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
@@ -116,7 +155,68 @@ export default function CheckoutModal({
             <span className="text-2xl">📱</span>
             <span className="text-sm font-black">M-PESA</span>
           </button>
+          <button
+            onClick={() => select("CREDIT")}
+            className={`h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition active:scale-[0.97] ${
+              method === "CREDIT"
+                ? "border-amber-400 bg-amber-500/15 text-amber-300"
+                : "border-slate-700 bg-slate-900 text-slate-300 hover:border-amber-600"
+            }`}
+          >
+            <span className="text-2xl">📒</span>
+            <span className="text-sm font-black">CREDIT</span>
+          </button>
         </div>
+
+        {/* CREDIT payer capture — customer name + phone (madeni pay-later) */}
+        {method === "CREDIT" && (
+          <div className="rounded-2xl border border-amber-600/40 bg-slate-900 p-3 space-y-2">
+            <div className="text-[11px] uppercase tracking-wider text-amber-400/90 font-black">
+              Credit customer (pay later)
+            </div>
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
+                Customer Name *
+              </span>
+              <input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g. B. Otieno"
+                autoFocus
+                className="w-full h-12 px-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-amber-500 outline-none text-slate-100 text-base"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
+                Phone (optional)
+              </span>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, ""))}
+                placeholder="e.g. 07XX XXX XXX"
+                inputMode="tel"
+                className="w-full h-12 px-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-amber-500 outline-none text-slate-100 text-base"
+              />
+            </label>
+          </div>
+        )}
+
+        {/* Dispatch location — only when a real rider is assigned (≠ WALK-IN) */}
+        {isDispatch && (
+          <div className="rounded-2xl border border-sky-700/50 bg-slate-900 p-3">
+            <label className="block">
+              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
+                Delivery Location / House
+              </span>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Marina Bay, House 12"
+                className="w-full h-12 px-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+              />
+            </label>
+          </div>
+        )}
 
         {/* Cash change dialog */}
         {method === "CASH" && (
@@ -191,7 +291,7 @@ export default function CheckoutModal({
             </span>
             <div className="text-[10px] text-slate-600 mb-1">
               Optional. The SMS webhook auto-matches your transactions — type a code here
-              only when auto-matching hasn't run.
+              only when auto-matching hasn't run. M-PESA orders stay PENDING until matched.
             </div>
             <input
               value={mpesaCode}
@@ -204,7 +304,7 @@ export default function CheckoutModal({
           </label>
         )}
 
-{/* Sales channel toggle — not a payment method */}
+        {/* Sales channel toggle — not a payment method */}
         <Toggle checked={glovo} onChange={setGlovo} label="Glovo Order (20% commission deducted)" accent="amber" />
 
         {/* eTIMS (optional flow) */}
@@ -239,11 +339,11 @@ export default function CheckoutModal({
             {charging ? "Saving…" : "REGISTER TRANSACTION & PRINT"}
           </BigButton>
           <button
-            onClick={onClose}
-            disabled={charging}
+            onClick={completeWithoutPrint}
+            disabled={!registerReady || !method || charging}
             className="w-full h-14 rounded-2xl bg-slate-800/60 text-slate-300 font-black hover:bg-slate-800 active:scale-[0.98] transition"
           >
-            SKIP & CLOSE
+            [ COMPLETE TRANSACTION WITHOUT PRINTING ]
           </button>
         </div>
       </div>
