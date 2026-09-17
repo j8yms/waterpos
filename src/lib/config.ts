@@ -88,6 +88,9 @@ export const TABS: Record<string, string[]> = {
   // REPAYMENTS is the cash/M-Pesa cash-flow log appended to on every
   // recorded debt repayment (action "logRepayment").
   REPAYMENTS: ["id", "date", "time", "customer", "order_id", "amount", "method", "notes", "created_at"],
+  // SUBSCRIPTIONS stores one row per rider device that opted into Web-Push
+  // dispatch alerts (rider, endpoint, p256dh, auth).
+  SUBSCRIPTIONS: ["rider", "endpoint", "p256dh", "auth", "created_at"],
 };
 
-export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS"];
+export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS", "SUBSCRIPTIONS"];

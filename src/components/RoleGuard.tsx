@@ -23,7 +23,7 @@ export default function RoleGuard({
       return;
     }
     if (role === "management" && user.role !== "management") {
-      router.replace("/queue");
+      router.replace("/pos/rider");
       return;
     }
     if (role === "rider" && user.role !== "rider") {

@@ -431,6 +431,18 @@ export function staticApiRoute<T = unknown>(
     return { debts, riderMatrix, glovo, topSelling } as T;
   }
 
+  // ─── GET /api/notifications/public-key ───
+  if (method === "GET" && path === "/api/notifications/public-key") {
+    // No server in static mode — never registers push; return an empty key so
+    // the client silently skips subscription capture.
+    return { publicKey: "" } as T;
+  }
+
+  // ─── POST /api/notifications (subscribe/unsubscribe) ───
+  if (method === "POST" && path === "/api/notifications") {
+    return { ok: true } as T;
+  }
+
   // ─── fallback: unknown route ───
   throw new Error(`Static mode: unknown route ${method} ${path}`);
 }

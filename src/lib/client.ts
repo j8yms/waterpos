@@ -30,6 +30,9 @@ export function loadAuth(): StoredAuth | null {
 
 export function saveAuth(session: AuthSession): void {
   localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("waterpos:auth"));
+  }
 }
 
 export function clearAuth(): void {

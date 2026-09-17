@@ -1,6 +1,7 @@
 import { requireRole, requireUser } from "@/lib/auth";
 import { appendRow, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow } from "@/lib/sheets";
 import { computeTicket, nairobiDate, nairobiTime, normalizeCustomerName, normalizeSheetDate, orderSummaryPublic } from "@/lib/pricing";
+import { notifyRiderOfDispatch } from "@/lib/push";
 import { newOrderId } from "@/lib/sync";
 import type { DispatchOrder, TicketItem } from "@/lib/types";
 
@@ -182,6 +183,12 @@ export async function POST(request: Request) {
     };
 
     await appendRow("ORDERS", order);
+
+    // Fire the dispatch push to the assigned rider once the order is safely
+    // on the ledger. Non-blocking: a push failure must never fail the order.
+    void notifyRiderOfDispatch(order).catch(() => {
+      /* push is best-effort */
+    });
 
     // Decrement stock after the order is safely logged.
     for (const it of items) {

@@ -15,7 +15,7 @@ export default function PinLogin() {
   useEffect(() => {
     const user = currentUser();
     if (user) {
-      router.replace(user.role === "rider" ? "/queue" : "/pos");
+      router.replace(user.role === "rider" ? "/pos/rider" : "/pos");
     }
   }, [router]);
 
@@ -56,7 +56,7 @@ export default function PinLogin() {
         return;
       }
       saveAuth(data);
-      router.replace(data.user.role === "rider" ? "/queue" : "/pos");
+      router.replace(data.user.role === "rider" ? "/pos/rider" : "/pos");
     } catch (e) {
       setError(
         e instanceof Error
