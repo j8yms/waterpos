@@ -12,10 +12,28 @@ type Feedback = { kind: "ok" | "err"; text: string } | null;
 
 type NewStaffForm = { name: string; role: "rider" | "management"; pin: string };
 
+/** Synchronous safe staff initializer — runs before any render. */
+function getInitialStaff(): StaffMember[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const cached = localStorage.getItem("waterpos.staff");
+    if (!cached) return [];
+    const parsed = JSON.parse(cached);
+    if (!Array.isArray(parsed) || (parsed.length > 0 && !parsed[0]?.name)) {
+      localStorage.removeItem("waterpos.staff");
+      return [];
+    }
+    return parsed;
+  } catch (e) {
+    if (typeof window !== "undefined") localStorage.removeItem("waterpos.staff");
+    return [];
+  }
+}
+
 export default function Staff() {
   const router = useRouter();
   const me = currentUser();
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>(() => getInitialStaff());
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);

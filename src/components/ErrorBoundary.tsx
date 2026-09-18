@@ -28,25 +28,37 @@ export default function ClientErrorBoundary({
     };
   }, []);
 
+  function hardReset() {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {}
+    window.location.reload();
+  }
+
   if (hasError) {
     return fallback || (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-500/20 flex items-center justify-center text-3xl font-black text-rose-400">
+        <div className="w-full max-w-md text-center">
+          <div className="mx-auto w-20 h-20 rounded-2xl bg-rose-500/20 flex items-center justify-center text-4xl font-black text-rose-400">
             ⚠️
           </div>
           <h1 className="mt-4 text-xl font-black tracking-wide text-rose-300">
-            Something went wrong
+            Application Crashed
           </h1>
-          <p className="text-sm text-slate-400 mt-2">
-            The app encountered an unexpected error. Please refresh the page.
+          <p className="text-sm text-slate-400 mt-2 mb-6">
+            The app encountered an unexpected error during startup. This is usually caused by
+            corrupted local data. Use the button below to perform a full storage wipe and reload.
           </p>
           <button
-            onClick={() => window.location.reload()}
-            className="mt-6 w-full h-12 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 text-white font-black text-lg transition active:scale-[0.98]"
+            onClick={hardReset}
+            className="w-full h-14 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-black text-lg transition active:scale-[0.98] shadow-lg shadow-rose-900/40"
           >
-            Refresh Page
+            ⚠️ HARD RESET RECOVERY: CLEAR APP STORAGE & RELOAD
           </button>
+          <p className="mt-4 text-xs text-slate-500">
+            This will delete all cached data (auth tokens, staff list, orders queue) and reload the page.
+          </p>
         </div>
       </div>
     );

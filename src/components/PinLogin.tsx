@@ -22,9 +22,28 @@ function isSession(data: LoginResponse | null | undefined): data is AuthSession 
   return !!data && !!data.token && !!data.user;
 }
 
+/** Synchronous safe staff initializer — runs before any render. */
+function getInitialStaff(): StaffMember[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const cached = localStorage.getItem("waterpos.staff");
+    if (!cached) return [];
+    const parsed = JSON.parse(cached);
+    // Strict structural schema check to ensure valid records
+    if (!Array.isArray(parsed) || (parsed.length > 0 && !parsed[0]?.name)) {
+      localStorage.removeItem("waterpos.staff");
+      return [];
+    }
+    return parsed;
+  } catch (e) {
+    if (typeof window !== "undefined") localStorage.removeItem("waterpos.staff");
+    return [];
+  }
+}
+
 export default function PinLogin() {
   const router = useRouter();
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>(() => getInitialStaff());
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [stage, setStage] = useState<Stage>("identity");
   const [entry, setEntry] = useState("");
