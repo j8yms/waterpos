@@ -1,3 +1,4 @@
+import './globals.css';
 import type { Metadata, Viewport } from "next";
 
 export const dynamic = "force-dynamic";
