@@ -54,7 +54,7 @@ export default function ClientErrorBoundary({
             onClick={hardReset}
             className="w-full h-14 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-black text-lg transition active:scale-[0.98] shadow-lg shadow-rose-900/40"
           >
-            ⚠️ HARD RESET RECOVERY: CLEAR APP STORAGE & RELOAD
+            [ ⚠️ SYSTEM RECOVERY: RE-INITIALIZE SYSTEM CHANNELS & RELOAD ]
           </button>
           <p className="mt-4 text-xs text-slate-500">
             This will delete all cached data (auth tokens, staff list, orders queue) and reload the page.
