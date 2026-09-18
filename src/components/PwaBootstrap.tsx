@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { api, currentUser } from "@/lib/client";
+import { api, currentUser, runMigrations } from "@/lib/client";
 
 interface PushSubscriptionLike {
   endpoint: string;
@@ -104,6 +104,11 @@ function bytesToBase64(bytes: ArrayBuffer): string {
 export default function PwaBootstrap() {
   const [ready, setReady] = useState(false);
   const registered = useRef(false);
+
+  // Run migrations on first mount (client-side only)
+  useEffect(() => {
+    runMigrations();
+  }, []);
 
   useEffect(() => {
     if (registered.current) return;

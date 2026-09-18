@@ -9,8 +9,8 @@ const STAFF_KEY = "waterpos.staff";
 const SCHEMA_VERSION_KEY = "waterpos.schema_version";
 const CURRENT_SCHEMA_VERSION = 3; // Bump to clear stale Macharia/Kamau staff data
 
-/** Run one-time migrations to clear stale cached data. */
-function runMigrations(): void {
+/** Run one-time migrations to clear stale cached data. Call from a useEffect in a Client Component. */
+export function runMigrations(): void {
   if (typeof window === "undefined") return;
   try {
     const storedVersion = parseInt(localStorage.getItem(SCHEMA_VERSION_KEY) || "0", 10);
@@ -38,11 +38,6 @@ function runMigrations(): void {
     // If migration fails, clear everything to prevent crashes
     localStorage.clear();
   }
-}
-
-// Run migrations immediately on module load (client-side only)
-if (typeof window !== "undefined") {
-  runMigrations();
 }
 
 export interface StoredAuth {
