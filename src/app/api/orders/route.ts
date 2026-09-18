@@ -110,10 +110,13 @@ export async function POST(request: Request) {
       paymentMethodRaw === "CREDIT"
         ? paymentMethodRaw
         : "";
-    // CASH settles instantly; M-PESA and GLOVO-channel orders stay PENDING
-    // until payment clears; CREDIT (madeni) stays PENDING until collected.
-    const payStatus: "PAID" | "PENDING" =
-      paymentMethod === "CASH" && !glovo
+    // When an order is explicitly assigned to a rider (not WALK-IN), it must start as PENDING/DISPATCHED.
+    // The rider will manually mark it PAID/COMPLETE via the mobile app.
+    // WALK-IN orders follow the existing payment-method-based logic.
+    const isAssignedToRider = driver !== "" && driver.toUpperCase() !== "WALK-IN (NO RIDER)";
+    const payStatus: "PAID" | "PENDING" = isAssignedToRider
+      ? "PENDING"
+      : paymentMethod === "CASH" && !glovo
         ? "PAID"
         : paymentMethod === "CREDIT"
           ? "PENDING"

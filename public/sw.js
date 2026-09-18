@@ -1,4 +1,4 @@
-/* MIST POS service worker — dispatch push notification engine with continuous alarm for "Up for Grabs" orders. */
+/* MIST POS service worker — dispatch push notification engine with continuous alarm for "Up for Grabs" orders and Ring Alarm broadcasts. */
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -13,12 +13,15 @@ const DISPATCH_VIBRATION = [
 ];
 
 /* Persistent alarm interval for "Up for Grabs" orders */
-let alarmInterval = null;
+let upForGrabsAlarmInterval = null;
+
+/* Persistent alarm interval for Ring Alarm broadcasts */
+let ringAlarmInterval = null;
 
 function startUpForGrabsAlarm(data) {
-  if (alarmInterval) return; // Already running
+  if (upForGrabsAlarmInterval) return; // Already running
 
-  alarmInterval = setInterval(() => {
+  upForGrabsAlarmInterval = setInterval(() => {
     self.registration.showNotification('🚨 UNASSIGNED DISPATCH ACTIVE!', {
       body: `${data.location} | ${data.product} | Collect: ${data.amount}`,
       tag: 'up-for-grabs',
@@ -36,9 +39,37 @@ function startUpForGrabsAlarm(data) {
 }
 
 function stopUpForGrabsAlarm() {
-  if (alarmInterval) {
-    clearInterval(alarmInterval);
-    alarmInterval = null;
+  if (upForGrabsAlarmInterval) {
+    clearInterval(upForGrabsAlarmInterval);
+    upForGrabsAlarmInterval = null;
+  }
+}
+
+/* Ring Alarm (broadcast from management) */
+function startRingAlarm(data) {
+  if (ringAlarmInterval) return; // Already running
+
+  ringAlarmInterval = setInterval(() => {
+    self.registration.showNotification('🔔 RING ALARM: Management Calling!', {
+      body: data.body || "Management is calling all riders!",
+      tag: 'ring-alarm',
+      renotify: true,
+      vibrate: [500, 200, 500, 200, 1000, 500, 1000], // Strong pattern for ring alarm
+      requireInteraction: true,
+      data: { url: '/pos/rider', type: 'ring-alarm' },
+    });
+
+    // Broadcast message hook to any open client view frames to play an interactive alert sound chime
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => client.postMessage({ type: 'PLAY_ALARM_SOUND' }));
+    });
+  }, 5000); // Ring every 5 seconds
+}
+
+function stopRingAlarm() {
+  if (ringAlarmInterval) {
+    clearInterval(ringAlarmInterval);
+    ringAlarmInterval = null;
   }
 }
 
@@ -62,9 +93,16 @@ self.addEventListener("push", (event) => {
     return;
   }
 
+  // Handle Ring Alarm broadcast from management
+  if (data.type === 'RING_ALARM') {
+    startRingAlarm(data);
+    return;
+  }
+
   // Handle clear-alarm command
   if (data.type === 'CLEAR_ALARM') {
     stopUpForGrabsAlarm();
+    stopRingAlarm();
     return;
   }
 
@@ -126,5 +164,6 @@ self.addEventListener("message", (event) => {
   }
   if (event.data && event.data.type === "CLEAR_ALARM") {
     stopUpForGrabsAlarm();
+    stopRingAlarm();
   }
 });

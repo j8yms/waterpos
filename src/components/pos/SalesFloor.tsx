@@ -74,9 +74,13 @@ export default function SalesFloor() {
   async function ringRider(rider: string) {
     if (!rider || rider === WALK_IN) return;
     try {
-      await api("/api/riders/ring", { method: "POST", body: { rider, message: `New order ready for ${rider}` } });
+      // Broadcast ring alarm to ALL riders
+      await api("/api/notifications/broadcast-alarm", {
+        method: "POST",
+        body: { message: `New order ready for ${rider}!` },
+      });
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Ring failed.");
+      setErr(e instanceof Error ? e.message : "Ring broadcast failed.");
     }
   }
 

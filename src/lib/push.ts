@@ -156,6 +156,7 @@ interface StoredSubscription {
   endpoint: string;
   p256dh: string;
   auth: string;
+  rider: string;
 }
 
 const NOTIFICATION_ICON = "/icons/notification-icon.png";
@@ -195,6 +196,65 @@ export async function notifyRiderOfDispatch(order: DispatchOrder): Promise<void>
             console.warn(`[push] Subscription for ${rider} rejected (${status}).`);
           } else {
             console.warn(`[push] sendNotification failed for ${rider}: ${String(err)}`);
+          }
+        });
+    })
+  );
+}
+
+/** Get all active rider subscriptions across all riders. */
+export async function listAllSubscriptions(): Promise<StoredSubscription[]> {
+  try {
+    const read = await readTab("SUBSCRIPTIONS");
+    return read.rows
+      .map((r, i) => ({
+        rowNumber: read.rowNumbers[i],
+        rider: String(r.rider ?? "").trim(),
+        endpoint: String(r.endpoint ?? "").trim(),
+        p256dh: String(r.p256dh ?? "").trim(),
+        auth: String(r.auth ?? "").trim(),
+      }))
+      .filter((r) => r.endpoint && r.rider !== "");
+  } catch {
+    return [];
+  }
+}
+
+/** Broadcast a RING ALARM to all registered rider devices.
+ *  Triggers a continuous alarm loop on each device until cleared. */
+export async function broadcastRingAlarm(message: string): Promise<void> {
+  getKeys();
+  const allSubs = await listAllSubscriptions();
+  if (!allSubs.length) return;
+
+  const payload = JSON.stringify({
+    type: "RING_ALARM",
+    title: "🔔 RING ALARM",
+    body: message || "Management is calling all riders!",
+    icon: NOTIFICATION_ICON,
+    url: "/pos/rider",
+    vibrate: [500, 200, 500, 200, 1000, 500, 1000], // Strong pattern for ring alarm
+    requireInteraction: true,
+    tag: "ring-alarm",
+    renotify: true,
+  });
+
+  await Promise.allSettled(
+    allSubs.map((sub) => {
+      const pushSub: webpush.PushSubscription = {
+        endpoint: sub.endpoint,
+        keys: { p256dh: sub.p256dh, auth: sub.auth },
+      };
+      return webpush
+        .sendNotification(pushSub, payload, { TTL: 86400 }) // 24h TTL for alarm
+        .catch((err: unknown) => {
+          const status = (err as { statusCode?: number })?.statusCode;
+          if (status === 404 || status === 410) {
+            void removeSubscription(sub.endpoint);
+          } else if (status === 401 || status === 403) {
+            console.warn(`[push] Subscription for ${sub.rider} rejected (${status}).`);
+          } else {
+            console.warn(`[push] broadcastRingAlarm failed for ${sub.rider}: ${String(err)}`);
           }
         });
     })
