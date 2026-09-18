@@ -52,7 +52,6 @@ export default function PinLogin() {
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.name)) {
-            // Apply rigid schema defaults to every record
             const clean = parsed.map((m: any) => ({
               id: m?.id || String(Math.random()),
               name: m?.name || "Unnamed Worker",
@@ -276,7 +275,7 @@ export default function PinLogin() {
   // Show loading shell until client mount
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-6">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-sky-900/40">W</div>
@@ -295,7 +294,7 @@ export default function PinLogin() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-sky-900/40">W</div>
@@ -321,16 +320,16 @@ export default function PinLogin() {
                     <button
                       key={safe.id}
                       onClick={() => selectIdentity(safe)}
-                      className={`text-left px-3 py-2.5 rounded-xl border font-bold text-sm transition active:scale-[0.98] ${
+                      className={`text-left px-4 py-3.5 rounded-xl border font-bold text-sm transition active:scale-[0.98] ${
                         safe.is_reset_pending
                           ? "bg-amber-950/40 border-amber-700/60 text-amber-200"
-                          : "bg-slate-800 border-slate-700 text-slate-200 hover:border-sky-600"
+                          : "bg-slate-800 border-slate-700 text-slate-100 hover:border-sky-600"
                       }`}
                     >
-                      <span className="block truncate">{safe.name || "Unnamed Worker"}</span>
-                      <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                      <span className="block text-base font-black truncate">{safe.name || "Unnamed Worker"}</span>
+                      <span className="block text-xs font-medium uppercase tracking-wide text-slate-400 mt-1">
                         {safe.role === "rider" ? "Rider" : "Management"}
-                        {safe.is_reset_pending ? " · Reset" : ""}
+                        {safe.is_reset_pending ? " · Reset pending" : ""}
                       </span>
                     </button>
                   );
@@ -344,7 +343,7 @@ export default function PinLogin() {
             <div className="mb-4 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="font-black truncate">{selected?.name || "Unknown"}</div>
-                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                <div className="text-xs uppercase tracking-wide text-slate-500">
                   {selected?.role === "rider" ? "Rider" : "Management"}
                 </div>
               </div>
@@ -370,7 +369,7 @@ export default function PinLogin() {
           <div className="grid grid-cols-3 gap-3">
             {keys.map((k, i) =>
               typeof k === "string" ? (
-                <button key={i} onClick={() => press(k)} className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-2xl font-bold text-slate-100 transition select-none">{k}</button>
+                <button key={i} onClick={() => press(k)} className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-2xl font-black text-slate-100 transition select-none">{k}</button>
               ) : (
                 <button key={i} onClick={k.action} className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-lg font-bold text-slate-300 transition select-none">{k.label}</button>
               )
@@ -391,8 +390,6 @@ export default function PinLogin() {
 }
 
 function logoutStale() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("waterpos.auth");
-    window.location.reload();
-  }
+  clearAuth();
+  window.location.reload();
 }

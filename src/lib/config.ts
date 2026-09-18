@@ -5,7 +5,7 @@ export const GLOVO_COMMISSION = 0.2;
 
 // The fixed assignment rider array shown on the Sales Floor, per the refactor
 // spec. "New rider" is handled as a distinct dynamic option in the UI.
-export const DEFAULT_RIDERS: string[] = ["Wajakoya", "Kevo", "Godi"];
+export const DEFAULT_RIDERS: string[] = ["Wajakoya"];
 export const VAT_RATE = 0.16; // KRA VAT charged on the gross sale amount
 export const TAX_CODE = "B"; // KRA item tax type: B = regular VAT
 
