@@ -1,61 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import PwaBootstrap from "@/components/PwaBootstrap";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
-  title: "MIST Water And Gas Distributors · POS",
-  description: "Water and gas distribution POS with M-Pesa auto-sync",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "MIST POS",
-  },
-  icons: {
-    apple: [
-      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-  },
+  title: "MIST POS",
+  description: "Mist Water and Gas Distributors POS",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  viewportFit: "cover",
-  themeColor: "#020617",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full">
-        <div id="app-root">
-          <ErrorBoundary>{children}</ErrorBoundary>
-        </div>
-        {/* Isolated print target used by window.print() fallback */}
-        <div id="receipt-print-root" aria-hidden="true" />
-        <PwaBootstrap />
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>MIST POS</title>
+      </head>
+      <body>
+        {children}
       </body>
     </html>
   );
