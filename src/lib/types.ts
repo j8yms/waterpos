@@ -12,6 +12,7 @@ export interface StaffMember {
   id: string;
   name: string;
   role: Role;
+  pin: string;
   is_reset_pending: boolean;
   isSuspended: boolean;
 }

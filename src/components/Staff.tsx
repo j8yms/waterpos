@@ -263,77 +263,87 @@ export default function Staff() {
               <span className="ml-3 text-sm">Loading staff…</span>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-800">
-              {staff.map((s) => (
-                <li key={s.id} className="flex items-center gap-3 px-3.5 py-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black truncate">{s.name}</span>
-                      <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md ${roleBadge(s.role)}`}>
-                        {s.role === "rider" ? "Rider" : "Management"}
-                      </span>
-                      {s.is_reset_pending && (
-                        <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300">
-                          Reset pending
+<ul className="divide-y divide-slate-800">
+              {staff.map((s) => {
+                const safe = {
+                  id: s?.id ?? Math.random().toString(36).slice(2),
+                  name: s?.name ?? "Unknown User",
+                  role: s?.role ?? "rider",
+                  pin: s?.pin ?? "",
+                  is_reset_pending: s?.is_reset_pending ?? false,
+                  isSuspended: s?.isSuspended ?? false,
+                };
+                return (
+                  <li key={safe.id} className="flex items-center gap-3 px-3.5 py-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black truncate">{safe.name || "Unknown User"}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md ${roleBadge(safe.role)}`}>
+                          {safe.role === "rider" ? "Rider" : "Management"}
                         </span>
+                        {safe.is_reset_pending && (
+                          <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300">
+                            Reset pending
+                          </span>
+                        )}
+                        {safe.isSuspended && (
+                          <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300">
+                            Suspended
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {confirmId === safe.id ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isMaster && (
+                            <button
+                              onClick={() => resetPin(safe)}
+                              disabled={busyId === safe.id}
+                              className="text-xs px-3 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black disabled:opacity-50"
+                            >
+                              {busyId === safe.id ? "…" : "Confirm"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setConfirmId(null)}
+                            disabled={busyId === safe.id}
+                            className="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        isMaster && (
+                          <button
+                            onClick={() => {
+                              setConfirmId(safe.id);
+                              setFeedback(null);
+                            }}
+                            className="shrink-0 text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 font-black border border-slate-700"
+                          >
+                            Reset PIN
+                          </button>
+                        )
                       )}
-                      {s.isSuspended && (
-                        <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300">
-                          Suspended
-                        </span>
+                      {isMaster && canSuspend && (
+                        <button
+                          onClick={() => toggleSuspend(safe)}
+                          disabled={busyId === safe.id}
+                          className={`shrink-0 text-xs px-3 py-2 rounded-lg font-black border ${
+                            safe.isSuspended
+                              ? "bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border-emerald-700/50"
+                              : "bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border-rose-700/50"
+                          } disabled:opacity-50`}
+                        >
+                          {busyId === safe.id ? "…" : (safe.isSuspended ? "UNSUSPEND" : "SUSPEND")}
+                        </button>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {confirmId === s.id ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isMaster && (
-                          <button
-                            onClick={() => resetPin(s)}
-                            disabled={busyId === s.id}
-                            className="text-xs px-3 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black disabled:opacity-50"
-                          >
-                            {busyId === s.id ? "…" : "Confirm"}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setConfirmId(null)}
-                          disabled={busyId === s.id}
-                          className="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold disabled:opacity-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      isMaster && (
-                        <button
-                          onClick={() => {
-                            setConfirmId(s.id);
-                            setFeedback(null);
-                          }}
-                          className="shrink-0 text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 font-black border border-slate-700"
-                        >
-                          Reset PIN
-                        </button>
-                      )
-                    )}
-                    {isMaster && canSuspend && (
-                      <button
-                        onClick={() => toggleSuspend(s)}
-                        disabled={busyId === s.id}
-                        className={`shrink-0 text-xs px-3 py-2 rounded-lg font-black border ${
-                          s.isSuspended
-                            ? "bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border-emerald-700/50"
-                            : "bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border-rose-700/50"
-                        } disabled:opacity-50`}
-                      >
-                        {busyId === s.id ? "…" : s.isSuspended ? "UNSUSPEND" : "SUSPEND"}
-                      </button>
-                    )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
               {!staff.length && (
                 <li className="px-4 py-6 text-center text-sm text-slate-500">
                   No staff records found.

@@ -110,6 +110,7 @@ export function getStaffDirectory(): StaffMember[] {
       id: s.id,
       name: s.name,
       role: (String(s.role).toLowerCase() === "rider" ? "rider" : "management") as Role,
+      pin: s.pin ?? "",
       is_reset_pending: isPending(s),
       isSuspended: isSuspended(s),
     }));

@@ -296,23 +296,33 @@ export default function PinLogin() {
                 Who&apos;s on shift?
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-0.5">
-                {(staff ?? []).map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => selectIdentity(s)}
-                    className={`text-left px-3 py-2.5 rounded-xl border font-bold text-sm transition active:scale-[0.98] ${
-                      s.is_reset_pending
-                        ? "bg-amber-950/40 border-amber-700/60 text-amber-200"
-                        : "bg-slate-800 border-slate-700 text-slate-200 hover:border-sky-600"
-                    }`}
-                  >
-                    <span className="block truncate">{s.name}</span>
-                    <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                      {s.role === "rider" ? "Rider" : "Management"}
-                      {s.is_reset_pending ? " · Reset" : ""}
-                    </span>
-                  </button>
-                ))}
+                {(staff ?? []).map((s) => {
+                  const safe = {
+                    id: s?.id ?? Math.random().toString(36).slice(2),
+                    name: s?.name ?? "Unknown User",
+                    role: s?.role ?? "rider",
+                    pin: s?.pin ?? "",
+                    is_reset_pending: s?.is_reset_pending ?? false,
+                    isSuspended: s?.isSuspended ?? false,
+                  };
+                  return (
+                    <button
+                      key={safe.id}
+                      onClick={() => selectIdentity(safe)}
+                      className={`text-left px-3 py-2.5 rounded-xl border font-bold text-sm transition active:scale-[0.98] ${
+                        safe.is_reset_pending
+                          ? "bg-amber-950/40 border-amber-700/60 text-amber-200"
+                          : "bg-slate-800 border-slate-700 text-slate-200 hover:border-sky-600"
+                      }`}
+                    >
+                      <span className="block truncate">{safe.name || "Unknown User"}</span>
+                      <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                        {safe.role === "rider" ? "Rider" : "Management"}
+                        {safe.is_reset_pending ? " · Reset" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
                 {!staff?.length && (
                   <div className="col-span-2 text-xs text-slate-500 py-3 text-center">
                     Loading staff…
