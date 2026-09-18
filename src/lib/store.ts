@@ -105,6 +105,7 @@ export function getStaffDirectory(): StaffMember[] {
   return getStaff()
     .filter((s) => String(s.active ?? "TRUE").toUpperCase() !== "FALSE")
     .filter((s) => String(s.role).toLowerCase() !== "master")
+    .filter((s) => s.name && String(s.name).trim() !== "")
     .map((s) => ({
       id: s.id,
       name: s.name,

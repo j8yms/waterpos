@@ -50,9 +50,10 @@ export default function PinLogin() {
     (async () => {
       try {
         const data = await api<{ staff: StaffMember[] }>("/api/auth/identities");
-        if (active) setStaff(data.staff ?? []);
+        if (active) setStaff(Array.isArray(data?.staff) ? data.staff : []);
       } catch {
         /* identity list is best-effort; master code still works */
+        if (active) setStaff([]);
       }
     })();
     return () => {
@@ -276,7 +277,7 @@ export default function PinLogin() {
                 Who&apos;s on shift?
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-0.5">
-                {staff.map((s) => (
+                {(staff ?? []).map((s) => (
                   <button
                     key={s.id}
                     onClick={() => selectIdentity(s)}
@@ -293,7 +294,7 @@ export default function PinLogin() {
                     </span>
                   </button>
                 ))}
-                {!staff.length && (
+                {!staff?.length && (
                   <div className="col-span-2 text-xs text-slate-500 py-3 text-center">
                     Loading staff…
                   </div>
