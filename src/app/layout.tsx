@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "MIST POS",
   description: "Mist Water and Gas Distributors POS",
