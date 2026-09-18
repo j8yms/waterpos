@@ -26,7 +26,7 @@ export default function SalesFloor() {
   const [selected, setSelected] = useState<string | null>(null);
   const [glovo, setGlovo] = useState(false);
   const [customer, setCustomer] = useState({ location: "", phone: "", address: "" });
-  const [driver, setDriver] = useState(WALK_IN);
+  const [driver, setDriver] = useState("UNASSIGNED");
   const [newRiderName, setNewRiderName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [charging, setCharging] = useState(false);
@@ -72,7 +72,7 @@ export default function SalesFloor() {
   }, []);
 
   async function ringRider(rider: string) {
-    if (!rider || rider === WALK_IN) return;
+    if (!rider || rider === WALK_IN || rider === "UNASSIGNED") return;
     try {
       await api("/api/riders/ring", { method: "POST", body: { rider, message: `New order ready for ${rider}` } });
     } catch (e) {
@@ -230,7 +230,7 @@ export default function SalesFloor() {
       setCart([]);
       setSelected(null);
       setCustomer({ location: "", phone: "", address: "" });
-      setDriver(WALK_IN);
+      setDriver("UNASSIGNED");
       setNewRiderName("");
       setEditingId(null);
       setCheckoutOpen(false);
@@ -353,6 +353,7 @@ export default function SalesFloor() {
                 }}
                 className="flex-1 h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
               >
+                <option value="UNASSIGNED">⚡ Up for Grabs (Any Rider)</option>
                 <option value={WALK_IN}>WALK-IN (no rider)</option>
                 {DEFAULT_RIDERS.map((r) => (
                   <option key={r} value={r}>
@@ -363,7 +364,7 @@ export default function SalesFloor() {
               </select>
               <button
                 onClick={() => ringRider(driver)}
-                disabled={driver === WALK_IN || driver === "NEW_RIDER"}
+                disabled={driver === WALK_IN || driver === "NEW_RIDER" || driver === "UNASSIGNED"}
                 className="h-12 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs transition disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Ring rider"
               >

@@ -61,6 +61,23 @@ export default function RiderQueue() {
     return () => window.clearInterval(handle);
   }, [load]);
 
+  // Claim an unassigned order
+  async function claimOrder(order: DispatchOrder) {
+    if (!order.id || order.driver.trim().toUpperCase() !== "UNASSIGNED") return;
+    setSaving(order.id);
+    setErr(null);
+    try {
+      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { driver: me?.name || "" } });
+      setOrders((list) =>
+        list.map((o) => (o.id === order.id ? { ...o, driver: me?.name || "" } : o))
+      );
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to claim order.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
   // Mark as delivered (single action — no PENDING toggle)
   async function markDelivered(order: DispatchOrder) {
     if (!order.id) return;
@@ -85,6 +102,7 @@ export default function RiderQueue() {
 
   const pendingCount = orders.filter((o) => o.pay_status === "PENDING").length;
   const deliveredCount = orders.filter((o) => o.pay_status === "PAID").length;
+  const unassignedCount = orders.filter((o) => o.driver.trim().toUpperCase() === "UNASSIGNED").length;
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -113,6 +131,11 @@ export default function RiderQueue() {
           <span className="px-2 py-1 rounded-lg bg-rose-500/15 text-rose-300">
             {pendingCount} Pending
           </span>
+          {unassignedCount > 0 && (
+            <span className="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300">
+              {unassignedCount} Up for Grabs
+            </span>
+          )}
         </div>
       </header>
 
@@ -140,15 +163,19 @@ export default function RiderQueue() {
               const delivered = o.pay_status === "PAID";
               const busy = saving === o.id;
               const isNew = newOrderIds.has(o.id);
+              const isUnassigned = o.driver.trim().toUpperCase() === "UNASSIGNED";
+              const isMine = o.driver.trim().toLowerCase() === me?.name?.toLowerCase();
               return (
                 <li
                   key={o.id}
                   className={`rounded-2xl border p-3.5 transition-all duration-300 ${
                     delivered
                       ? "bg-emerald-950/40 border-emerald-700/50 opacity-60"
-                      : isNew
+                      : isUnassigned
                         ? "bg-amber-950/30 border-amber-600/50 ring-2 ring-amber-500 animate-pulse"
-                        : "bg-slate-900 border-slate-700"
+                        : isNew
+                          ? "bg-sky-950/30 border-sky-600/50 ring-2 ring-sky-500"
+                          : "bg-slate-900 border-slate-700"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -160,10 +187,12 @@ export default function RiderQueue() {
                     </div>
                     <span
                       className={`shrink-0 text-[11px] font-black px-2 py-1 rounded-lg ${
-                        delivered ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"
+                        delivered ? "bg-emerald-500/20 text-emerald-300"
+                        : isUnassigned ? "bg-amber-500/20 text-amber-300"
+                        : "bg-rose-500/20 text-rose-300"
                       }`}
                     >
-                      {delivered ? "✓ Delivered" : "Pending"}
+                      {delivered ? "✓ Delivered" : isUnassigned ? "⚡ Up for Grabs" : "Pending"}
                     </span>
                   </div>
 
@@ -174,7 +203,15 @@ export default function RiderQueue() {
 
                   {delivered ? (
                     <div className="mt-3 text-center text-xs text-slate-500">Completed — {o.time}</div>
-                  ) : (
+                  ) : isUnassigned ? (
+                    <button
+                      onClick={() => claimOrder(o)}
+                      disabled={busy}
+                      className="mt-3 w-full h-14 rounded-xl font-black bg-amber-600 hover:bg-amber-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-amber-900/30"
+                    >
+                      {busy ? "…" : "⚡ Claim This Order"}
+                    </button>
+                  ) : isMine ? (
                     <button
                       onClick={() => markDelivered(o)}
                       disabled={busy}
@@ -182,6 +219,8 @@ export default function RiderQueue() {
                     >
                       {busy ? "…" : "✓ Mark Delivered"}
                     </button>
+                  ) : (
+                    <div className="mt-3 text-center text-xs text-slate-500">Assigned to {o.driver}</div>
                   )}
 
                   {o.mpesa_code && (

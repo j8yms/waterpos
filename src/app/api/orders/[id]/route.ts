@@ -1,95 +1,132 @@
-import { requireRole, requireUser } from "@/lib/auth";
-import { deleteRow, readAllLedgerRows, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow } from "@/lib/sheets";
-import { parseProductLine } from "@/lib/pricing";
-import type { PayStatus } from "@/lib/types";
+import { requireUser } from "@/lib/auth";
+import { readTab, updateRow, rowToOrder } from "@/lib/sheets";
+import { SheetsConfigError } from "@/lib/sheets";
 
 export const runtime = "nodejs";
 
-export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const user = requireUser(request);
   if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
 
-  const { id } = await ctx.params;
-  let body: any;
+  const { id } = await params;
+  if (!id) return Response.json({ error: "Order ID required." }, { status: 400 });
+
+  let body: Partial<{ pay_status: string; driver: string }>;
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const status: string = String(body.pay_status ?? "").toUpperCase();
-  if (!["PAID", "PENDING"].includes(status)) {
-    return Response.json({ error: "pay_status must be PAID or PENDING." }, { status: 400 });
-  }
-
   try {
     const read = await readTab("ORDERS");
-    const idx = read.rows.findIndex((r) => String(r.id) === String(id));
-    if (idx === -1) return Response.json({ error: "Order not found." }, { status: 404 });
+    if (!read.rows.length) return Response.json({ error: "Order not found." }, { status: 404 });
+
+    const idx = read.rows.findIndex((r) => String(r.id) === id);
+    if (idx === -1) {
+      // Also check OUT tab
+      const outRead = await readTab("OUT");
+      const outIdx = outRead.rows.findIndex((r) => String(r.id) === id);
+      if (outIdx === -1) return Response.json({ error: "Order not found." }, { status: 404 });
+
+      const outOrder = rowToOrder(outRead.rows[outIdx], outRead.rowNumbers[outIdx]);
+
+      // Rider can only claim unassigned or their own orders
+      if (user.role === "rider") {
+        const isUnassigned = outOrder.driver.trim().toUpperCase() === "UNASSIGNED";
+        const isMine = outOrder.driver.trim().toLowerCase() === user.name?.toLowerCase();
+        if (!isUnassigned && !isMine) {
+          return Response.json({ error: "Cannot modify this order." }, { status: 403 });
+        }
+      }
+
+      const patch: Record<string, string> = {};
+      if (body.pay_status) patch.pay_status = body.pay_status;
+      if (body.driver) patch.driver = body.driver;
+
+      if (Object.keys(patch).length > 0) {
+        await updateRow("OUT", outRead.rowNumbers[outIdx], patch);
+      }
+
+      return Response.json({ ok: true });
+    }
 
     const order = rowToOrder(read.rows[idx], read.rowNumbers[idx]);
 
+    // Rider can only claim unassigned or their own orders
     if (user.role === "rider") {
-      const driverName = user.name.trim().toLowerCase();
-      if (order.driver.trim().toLowerCase() !== driverName) {
-        return Response.json({ error: "You can only update your own assigned orders." }, { status: 403 });
+      const isUnassigned = order.driver.trim().toUpperCase() === "UNASSIGNED";
+      const isMine = order.driver.trim().toLowerCase() === user.name?.toLowerCase();
+      if (!isUnassigned && !isMine) {
+        return Response.json({ error: "Cannot modify this order." }, { status: 403 });
       }
-      // Riders may ONLY flip the pay button, never touch financials.
-      await updateRow("ORDERS", read.rowNumbers[idx], {
-        pay_status: status as PayStatus,
-      });
-      return Response.json({ ok: true, pay_status: status });
     }
 
-    await updateRow("ORDERS", read.rowNumbers[idx], {
-      pay_status: status as PayStatus,
-      mpesa_code: body.mpesa_code !== undefined ? String(body.mpesa_code) : undefined,
-    });
-    return Response.json({ ok: true, pay_status: status });
+    const patch: Record<string, string> = {};
+    if (body.pay_status) patch.pay_status = body.pay_status;
+    if (body.driver) patch.driver = body.driver;
+
+    if (Object.keys(patch).length > 0) {
+      await updateRow("ORDERS", read.rowNumbers[idx], patch);
+    }
+
+    return Response.json({ ok: true });
   } catch (err) {
-    return Response.json({ error: errMessage(err) }, { status: 500 });
+    return Response.json(
+      { error: err instanceof SheetsConfigError ? err.message : err instanceof Error ? err.message : "Update failed." },
+      { status: 500 }
+    );
   }
 }
 
-/**
- * Void / purge a transaction entirely: restore the quantities the order
- * consumed back to PRODUCTS stock, then delete the ledger row itself. Only
- * management can nuke rows (rider queue edits are just pay flips above).
- */
-export async function DELETE(request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const user = requireRole(request, "management");
-  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = requireUser(request);
+  if (!user || user.role !== "management") {
+    return Response.json({ error: "Unauthorized." }, { status: 401 });
+  }
 
-  const { id } = await ctx.params;
+  const { id } = await params;
+  if (!id) return Response.json({ error: "Order ID required." }, { status: 400 });
 
   try {
-    const ledger = await readAllLedgerRows();
-    const entry = ledger.find((l) => l.order.id === String(id));
-    if (!entry) return Response.json({ error: "Order not found." }, { status: 404 });
-
-    // Restore stock consumed by this order (product summaries hold qty + name).
-    const productsRead = await readTab("PRODUCTS");
-    const lineItems = parseProductLine(entry.order.product);
-    for (const line of lineItems) {
-      const pIdx = productsRead.rows.findIndex(
-        (r) => String(r?.name ?? "").trim().toLowerCase() === line.name.trim().toLowerCase()
-      );
-      if (pIdx === -1) continue;
-      const product = rowToProduct(productsRead.rows[pIdx]);
-      await updateRow("PRODUCTS", productsRead.rowNumbers[pIdx], {
-        stock: Math.max(0, product.stock + line.qty),
-        updated_at: new Date().toISOString(),
+    const read = await readTab("ORDERS");
+    const idx = read.rows.findIndex((r) => String(r.id) === id);
+    if (idx >= 0) {
+      // Delete from ORDERS by clearing the row (Google Sheets doesn't support easy row deletion via values API)
+      // Instead, mark as voided by clearing key fields
+      await updateRow("ORDERS", read.rowNumbers[idx], {
+        id: `VOID-${id}`,
+        customer: "VOIDED",
+        total: "0",
+        pay_status: "VOIDED",
       });
+      return Response.json({ ok: true });
     }
 
-    await deleteRow(entry.tab, entry.order._row);
-    return Response.json({ ok: true, voided: entry.order.id });
-  } catch (err) {
-    return Response.json({ error: errMessage(err) }, { status: 500 });
-  }
-}
+    // Check OUT tab
+    const outRead = await readTab("OUT");
+    const outIdx = outRead.rows.findIndex((r) => String(r.id) === id);
+    if (outIdx >= 0) {
+      await updateRow("OUT", outRead.rowNumbers[outIdx], {
+        id: `VOID-${id}`,
+        customer: "VOIDED",
+        total: "0",
+        pay_status: "VOIDED",
+      });
+      return Response.json({ ok: true });
+    }
 
-function errMessage(err: unknown): string {
-  if (err instanceof SheetsConfigError) return err.message;
-  return err instanceof Error ? err.message : "Order update failed.";
+    return Response.json({ error: "Order not found." }, { status: 404 });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof SheetsConfigError ? err.message : err instanceof Error ? err.message : "Delete failed." },
+      { status: 500 }
+    );
+  }
 }

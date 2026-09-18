@@ -53,8 +53,11 @@ export async function GET(request: Request) {
 
     if (user.role === "rider") {
       // Riders only ever see their own queue, and never financials.
+      // Show orders assigned to this rider OR unassigned ("up for grabs").
       const driverName = String(driverParam || user.name).trim().toLowerCase();
-      orders = orders.filter((o) => o.driver.trim().toLowerCase() === driverName);
+      orders = orders.filter(
+        (o) => o.driver.trim().toLowerCase() === driverName || o.driver.trim().toUpperCase() === "UNASSIGNED"
+      );
       return Response.json({
         orders: orders.map((o) => orderSummaryPublic(o)),
       });
