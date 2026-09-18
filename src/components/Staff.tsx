@@ -34,7 +34,7 @@ export default function Staff() {
   const load = useCallback(async () => {
     try {
       const data = await api<{ staff: StaffMember[] }>("/api/staff");
-      setStaff(data.staff ?? []);
+      setStaff(Array.isArray(data?.staff) ? data.staff : []);
     } catch (e) {
       setFeedback({ kind: "err", text: e instanceof Error ? e.message : "Failed to load staff." });
     } finally {

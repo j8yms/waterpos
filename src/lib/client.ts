@@ -5,6 +5,45 @@ const PRODUCTS_KEY = "waterpos.products";
 const CUSTOMERS_KEY = "waterpos.customers";
 const ORDERS_KEY = (date: string) => `waterpos.orders.${date}`;
 const QUEUE_KEY = "waterpos.queue";
+const STAFF_KEY = "waterpos.staff";
+const SCHEMA_VERSION_KEY = "waterpos.schema_version";
+const CURRENT_SCHEMA_VERSION = 3; // Bump to clear stale Macharia/Kamau staff data
+
+/** Run one-time migrations to clear stale cached data. */
+function runMigrations(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const storedVersion = parseInt(localStorage.getItem(SCHEMA_VERSION_KEY) || "0", 10);
+    if (storedVersion >= CURRENT_SCHEMA_VERSION) return;
+
+    if (storedVersion < 3) {
+      // v3: Remove deleted staff (Macharia, Kamau) from cached staff data
+      try {
+        const raw = localStorage.getItem("waterpos.staff");
+        if (raw) {
+          const staff = JSON.parse(raw);
+          const validNames = ["Vinnie", "Emma", "Tracy", "Wajakoya"];
+          const filtered = Array.isArray(staff)
+            ? staff.filter((s: any) => s?.name && validNames.includes(s.name))
+            : [];
+          localStorage.setItem("waterpos.staff", JSON.stringify(filtered));
+        }
+      } catch {
+        localStorage.removeItem("waterpos.staff");
+      }
+    }
+
+    localStorage.setItem(SCHEMA_VERSION_KEY, String(CURRENT_SCHEMA_VERSION));
+  } catch {
+    // If migration fails, clear everything to prevent crashes
+    localStorage.clear();
+  }
+}
+
+// Run migrations immediately on module load (client-side only)
+if (typeof window !== "undefined") {
+  runMigrations();
+}
 
 export interface StoredAuth {
   token: string;

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import PwaBootstrap from "@/components/PwaBootstrap";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,7 +50,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <div id="app-root">{children}</div>
+        <div id="app-root">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </div>
         {/* Isolated print target used by window.print() fallback */}
         <div id="receipt-print-root" aria-hidden="true" />
         <PwaBootstrap />
