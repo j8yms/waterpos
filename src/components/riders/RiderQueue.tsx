@@ -1,31 +1,51 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, cacheAssignments, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
 import { money, nairobiDate } from "@/lib/pricing";
 import { printToNetwork, receiptFromOrder } from "@/lib/print";
 import { Spinner } from "@/components/ui";
-import type { DispatchOrder, PayStatus } from "@/lib/types";
+import type { DispatchOrder } from "@/lib/types";
+
+function tryCache<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function RiderQueue() {
   const router = useRouter();
   const me = currentUser();
-  const [orders, setOrders] = useState<Partial<DispatchOrder>[]>([]);
+  const [orders, setOrders] = useState<DispatchOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     if (!me) return;
-    setLoading(true);
-    setErr(null);
     try {
-      const res = await api<{ orders: Partial<DispatchOrder>[] }>(`/api/orders?date=${nairobiDate()}`);
-      setOrders(res.orders);
-      cacheAssignments(res.orders);
+      const res = await api<{ orders: DispatchOrder[] }>(`/api/orders?date=${nairobiDate()}`);
+      const fresh = res.orders ?? [];
+      
+      // Detect newly assigned orders (not in current state)
+      setOrders((prev) => {
+        const prevIds = new Set(prev.map(o => o.id));
+        const newlyAssigned = fresh.filter(o => !prevIds.has(o.id));
+        if (newlyAssigned.length) {
+          setNewOrderIds((s) => new Set([...s, ...newlyAssigned.map(o => o.id)]));
+          // Auto-clear "new" highlight after 8 seconds
+          newlyAssigned.forEach(o => setTimeout(() => setNewOrderIds(s => { const ns = new Set(s); ns.delete(o.id); return ns; }), 8000));
+        }
+        return fresh;
+      });
+      cacheAssignments(fresh);
     } catch (e) {
-      const cached = tryCache<Partial<DispatchOrder>[]>("waterpos.queue");
+      const cached = tryCache<DispatchOrder[]>("waterpos.queue");
       if (cached) setOrders(cached);
       setErr(e instanceof Error ? "Offline — showing cached queue." : "Failed to load queue.");
     } finally {
@@ -33,21 +53,23 @@ export default function RiderQueue() {
     }
   }, [me]);
 
+  // Initial load + periodic refresh (every 30s) — only updates changed orders
   useEffect(() => {
     load();
     flushPendingOps();
-    const handle = window.setInterval(load, 45_000);
+    const handle = window.setInterval(load, 30_000);
     return () => window.clearInterval(handle);
   }, [load]);
 
-  async function flipStatus(order: Partial<DispatchOrder>, status: PayStatus) {
+  // Mark as delivered (single action — no PENDING toggle)
+  async function markDelivered(order: DispatchOrder) {
     if (!order.id) return;
     setSaving(order.id);
     setErr(null);
     try {
-      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { pay_status: status } });
+      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { pay_status: "PAID" } });
       setOrders((list) =>
-        list.map((o) => (o.id === order.id ? { ...o, pay_status: status } : o))
+        list.map((o) => (o.id === order.id ? { ...o, pay_status: "PAID" as const } : o))
       );
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Update failed.");
@@ -61,8 +83,8 @@ export default function RiderQueue() {
     router.replace("/");
   }
 
-  const paidCount = orders.filter((o) => o.pay_status === "PAID").length;
   const pendingCount = orders.filter((o) => o.pay_status === "PENDING").length;
+  const deliveredCount = orders.filter((o) => o.pay_status === "PAID").length;
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -86,10 +108,10 @@ export default function RiderQueue() {
         </div>
         <div className="flex gap-2 mt-2 text-[11px] font-black">
           <span className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-300">
-            {paidCount} PAID
+            {deliveredCount} Delivered
           </span>
           <span className="px-2 py-1 rounded-lg bg-rose-500/15 text-rose-300">
-            {pendingCount} PENDING
+            {pendingCount} Pending
           </span>
         </div>
       </header>
@@ -115,15 +137,18 @@ export default function RiderQueue() {
         ) : (
           <ul className="space-y-3 max-w-2xl mx-auto">
             {orders.map((o) => {
-              const paid = o.pay_status === "PAID";
+              const delivered = o.pay_status === "PAID";
               const busy = saving === o.id;
+              const isNew = newOrderIds.has(o.id);
               return (
                 <li
                   key={o.id}
-                  className={`rounded-2xl border p-3.5 transition ${
-                    paid
-                      ? "bg-emerald-950/40 border-emerald-700/50"
-                      : "bg-slate-900 border-slate-700"
+                  className={`rounded-2xl border p-3.5 transition-all duration-300 ${
+                    delivered
+                      ? "bg-emerald-950/40 border-emerald-700/50 opacity-60"
+                      : isNew
+                        ? "bg-amber-950/30 border-amber-600/50 ring-2 ring-amber-500 animate-pulse"
+                        : "bg-slate-900 border-slate-700"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -135,10 +160,10 @@ export default function RiderQueue() {
                     </div>
                     <span
                       className={`shrink-0 text-[11px] font-black px-2 py-1 rounded-lg ${
-                        paid ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"
+                        delivered ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"
                       }`}
                     >
-                      {o.pay_status}
+                      {delivered ? "✓ Delivered" : "Pending"}
                     </span>
                   </div>
 
@@ -147,30 +172,17 @@ export default function RiderQueue() {
                     <span className="font-black text-sky-300 shrink-0">{money(o.total ?? 0)}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5 mt-3">
+                  {delivered ? (
+                    <div className="mt-3 text-center text-xs text-slate-500">Completed — {o.time}</div>
+                  ) : (
                     <button
-                      onClick={() => flipStatus(o, "PAID")}
-                      disabled={busy || paid}
-                      className={`h-14 rounded-xl font-black transition active:scale-[0.97] ${
-                        paid
-                          ? "bg-emerald-600 text-white"
-                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30"
-                      }`}
+                      onClick={() => markDelivered(o)}
+                      disabled={busy}
+                      className="mt-3 w-full h-14 rounded-xl font-black bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-emerald-900/30"
                     >
-                      {busy && !paid ? "…" : "PAID ✓"}
+                      {busy ? "…" : "✓ Mark Delivered"}
                     </button>
-                    <button
-                      onClick={() => flipStatus(o, "PENDING")}
-                      disabled={busy || !paid}
-                      className={`h-14 rounded-xl font-black transition active:scale-[0.97] ${
-                        !paid
-                          ? "bg-rose-500/30 text-rose-200"
-                          : "bg-rose-500 hover:bg-rose-400 text-white"
-                      }`}
-                    >
-                      {busy && paid ? "…" : "PENDING"}
-                    </button>
-                  </div>
+                  )}
 
                   {o.mpesa_code && (
                     <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-sky-950/40 border border-sky-700/50 px-3 py-2">
@@ -198,13 +210,4 @@ export default function RiderQueue() {
       </section>
     </main>
   );
-}
-
-function tryCache<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
 }

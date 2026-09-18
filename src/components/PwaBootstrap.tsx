@@ -17,6 +17,36 @@ async function getVapidPublicKey(): Promise<string> {
   }
 }
 
+function playDispatchSound() {
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+    oscillator.frequency.setValueAtTime(1108, audioCtx.currentTime + 0.15); // C#6
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+    oscillator.frequency.setValueAtTime(660, audioCtx.currentTime + 0.45); // E5
+    
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+    
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 1.2);
+  } catch {
+    // Fallback: try to play a simple beep using Audio element
+    try {
+      const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT");
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+    } catch {}
+  }
+}
+
 async function registerPush(riderName: string): Promise<void> {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
   if (!("Notification" in window)) return;
@@ -102,6 +132,17 @@ export default function PwaBootstrap() {
     })();
 
     void scope.then(() => setReady(true));
+
+    // Listen for push notification sound trigger from service worker
+    useEffect(() => {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === "PLAY_DISPATCH_SOUND") {
+          playDispatchSound();
+        }
+      };
+      navigator.serviceWorker.addEventListener("message", handleMessage);
+      return () => navigator.serviceWorker.removeEventListener("message", handleMessage);
+    }, []);
 
     // A rider may log in after this shell already mounted (layout persists
     // across SPA navigation), so re-capture on every fresh authentication.

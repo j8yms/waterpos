@@ -42,10 +42,18 @@ self.addEventListener("push", (event) => {
       url,
       dateOfArrival: Date.now(),
     },
-    requireInteraction: false,
+    requireInteraction: true, // Keep notification visible until user acts
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
+
+  // Notify any open client to play a sound
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      clients.forEach((client) => client.postMessage({ type: "PLAY_DISPATCH_SOUND" }));
+    })()
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

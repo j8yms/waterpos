@@ -71,6 +71,15 @@ export default function SalesFloor() {
     }
   }, []);
 
+  async function ringRider(rider: string) {
+    if (!rider || rider === WALK_IN) return;
+    try {
+      await api("/api/riders/ring", { method: "POST", body: { rider, message: `New order ready for ${rider}` } });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Ring failed.");
+    }
+  }
+
   useEffect(() => {
     const cached = tryCache<Product[]>("waterpos.products");
     if (cached && cached.length) {
@@ -334,23 +343,33 @@ export default function SalesFloor() {
             <label className="block text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1">
               Assign Rider
             </label>
-            <select
-              value={driver}
-              onChange={(e) => {
-                const v = e.target.value;
-                setDriver(v);
-                if (v === "NEW_RIDER") setNewRiderName("");
-              }}
-              className="w-full h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
-            >
-              <option value={WALK_IN}>WALK-IN (no rider)</option>
-              {DEFAULT_RIDERS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-              <option value="NEW_RIDER">New rider…</option>
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={driver}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setDriver(v);
+                  if (v === "NEW_RIDER") setNewRiderName("");
+                }}
+                className="flex-1 h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+              >
+                <option value={WALK_IN}>WALK-IN (no rider)</option>
+                {DEFAULT_RIDERS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+                <option value="NEW_RIDER">New rider…</option>
+              </select>
+              <button
+                onClick={() => ringRider(driver)}
+                disabled={driver === WALK_IN || driver === "NEW_RIDER"}
+                className="h-12 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs transition disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Ring rider"
+              >
+                🔔 Ring
+              </button>
+            </div>
             {driver === "NEW_RIDER" && (
               <input
                 value={newRiderName}
