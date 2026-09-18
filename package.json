@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "rm -rf .next && next build",
     "start": "next start",
     "test": "tsx src/scripts/self-test.ts",
     "import:aronium": "tsx src/scripts/import-aronium.ts",
