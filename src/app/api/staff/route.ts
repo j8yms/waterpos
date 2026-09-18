@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { requireUser } from "@/lib/auth";
 import { canManageStaff } from "@/lib/config";
-import { listStaffUsers, updateStaffCredentials, ensureSpreadsheetStructure, appendRow, getUsersFromSheet } from "@/lib/sheets";
+import { listStaffUsers, findAndUpdateStaff, appendRow, getUsersFromSheet } from "@/lib/sheets";
 
 export const runtime = "nodejs";
 
@@ -73,8 +73,6 @@ export async function POST(request: Request) {
     if (pin === "0800") return Response.json({ error: "PIN 0800 is reserved." }, { status: 400 });
 
     try {
-      await ensureSpreadsheetStructure();
-
       // Check for duplicate name/PIN using full user list (includes PINs)
       const allUsers = await getUsersFromSheet();
       if (allUsers.some((u) => u.name.toLowerCase() === name.toLowerCase())) {
@@ -115,15 +113,10 @@ export async function POST(request: Request) {
       return Response.json({ error: "Missing isSuspended boolean." }, { status: 400 });
     }
     try {
-      await ensureSpreadsheetStructure();
-      const staff = await listStaffUsers();
-      const target = staff.find((s) => String(s.id) === id);
-      if (!target) return Response.json({ error: "Staff member not found." }, { status: 404 });
+      const result = await findAndUpdateStaff(id, { isSuspended: body.isSuspended });
+      if (!result.ok) return Response.json({ error: "Staff member not found." }, { status: 404 });
 
-      const ok = await updateStaffCredentials(id, { isSuspended: body.isSuspended });
-      if (!ok) return Response.json({ error: "Staff row not found in USERS sheet." }, { status: 404 });
-
-      return Response.json({ ok: true, id, name: target.name, isSuspended: body.isSuspended });
+      return Response.json({ ok: true, id, name: result.name, isSuspended: body.isSuspended });
     } catch (err) {
       return Response.json(
         { error: err instanceof Error ? err.message : "Failed to toggle suspend." },
@@ -137,15 +130,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    await ensureSpreadsheetStructure();
-    const staff = await listStaffUsers();
-    const target = staff.find((s) => String(s.id) === id);
-    if (!target) return Response.json({ error: "Staff member not found." }, { status: 404 });
+    const result = await findAndUpdateStaff(id, { pin: "", is_reset_pending: true });
+    if (!result.ok) return Response.json({ error: "Staff member not found." }, { status: 404 });
 
-    const ok = await updateStaffCredentials(id, { pin: "", is_reset_pending: true });
-    if (!ok) return Response.json({ error: "Staff row not found in USERS sheet." }, { status: 404 });
-
-    return Response.json({ ok: true, id, name: target.name, is_reset_pending: true });
+    return Response.json({ ok: true, id, name: result.name, is_reset_pending: true });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "Failed to reset PIN." },

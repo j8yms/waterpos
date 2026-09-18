@@ -495,6 +495,28 @@ export async function updateStaffCredentials(
   return true;
 }
 
+/** Find a staff member by id and update in a single read+write (quota-friendly). */
+export async function findAndUpdateStaff(
+  id: string,
+  changes: { pin?: string; is_reset_pending?: boolean; isSuspended?: boolean }
+): Promise<{ ok: boolean; rowNumber?: number; name?: string }> {
+  const read = await readTab("USERS");
+  const idx = read.rows.findIndex((r) => String(r.id) === String(id));
+  if (idx < 0) return { ok: false };
+  const rowNumber = read.rowNumbers[idx];
+  const name = String(read.rows[idx].name ?? "");
+  const patch: Record<string, string> = {};
+  if (changes.pin !== undefined) patch.pin = changes.pin;
+  if (changes.is_reset_pending !== undefined) {
+    patch.is_reset_pending = changes.is_reset_pending ? "TRUE" : "FALSE";
+  }
+  if (changes.isSuspended !== undefined) {
+    patch.isSuspended = changes.isSuspended ? "TRUE" : "FALSE";
+  }
+  await updateRow("USERS", rowNumber, patch);
+  return { ok: true, rowNumber, name };
+}
+
 export function rowToProduct(r: Record<string, any>): Product {
   return {
     id: String(r.id ?? crypto.randomUUID()),
