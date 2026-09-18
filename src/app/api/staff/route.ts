@@ -57,11 +57,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  // Create new staff (master + Vinnie only)
-  const canSuspend = user.role === "master" || (user.role === "management" && user.name?.toLowerCase() === "vinnie");
+  // Master (0800) can do everything. Vinnie can create staff only.
+  const isMaster = user.role === "master";
+  const canSuspendOrCreate = isMaster || (user.role === "management" && user.name?.toLowerCase() === "vinnie");
 
   if (body.action === "create") {
-    if (!canSuspend) {
+    if (!canSuspendOrCreate) {
       return Response.json({ error: "Insufficient privileges to create staff." }, { status: 403 });
     }
     const name = String(body.name ?? "").trim();
@@ -102,13 +103,15 @@ export async function POST(request: Request) {
     }
   }
 
+  // Only master (0800) can reset PIN or suspend/unsuspend
+  if (!isMaster) {
+    return Response.json({ error: "Insufficient privileges. Only Super Admin can reset PIN or suspend." }, { status: 403 });
+  }
+
   const id = String(body.id ?? "").trim();
   if (!id) return Response.json({ error: "Missing staff id." }, { status: 400 });
 
   if (body.action === "toggleSuspend") {
-    if (!canSuspend) {
-      return Response.json({ error: "Insufficient privileges to suspend/unsuspend." }, { status: 403 });
-    }
     if (typeof body.isSuspended !== "boolean") {
       return Response.json({ error: "Missing isSuspended boolean." }, { status: 400 });
     }

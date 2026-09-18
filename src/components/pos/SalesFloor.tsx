@@ -417,75 +417,6 @@ export default function SalesFloor() {
               onSelect={setSelected}
             />
           </div>
-
-          {/* Today's Sales feed */}
-          <div className="h-44 shrink-0 flex flex-col min-h-0 rounded-2xl border border-slate-800 bg-slate-950 p-3">
-            <h2 className="text-xs uppercase tracking-wider text-slate-400 font-black mb-2">
-              Today's Sales · {today}
-            </h2>
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5">
-              {todayOrders.length === 0 && (
-                <div className="text-center text-slate-600 text-sm py-4">
-                  No dispatches yet today.
-                </div>
-              )}
-              {todayOrders.map((o) => {
-                const pending = o.pay_status === "PENDING";
-                return (
-                  <div
-                    key={o.id}
-                    onClick={pending ? () => reloadOrder(o) : undefined}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
-                      pending
-                        ? "border-amber-600/40 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10"
-                        : "border-slate-800 bg-slate-900"
-                    } ${editingId === o.id ? "ring-1 ring-sky-400" : ""}`}
-                    title={pending ? "Tap to reload this pending sale into the active cart" : undefined}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className={`text-sm font-bold truncate leading-tight ${pending ? "text-amber-200" : "text-slate-100"}`}>
-                        {o.customer}
-                      </div>
-                      <div className="text-[11px] text-slate-400 truncate">
-                        {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className={`text-sm font-black ${pending ? "text-amber-300" : "text-emerald-400"}`}>
-                        {money(o.total)}
-                      </div>
-                      {isAdmin && (
-                        <div className="text-[11px] text-slate-500 font-bold">
-                          +{money(o.profit)} profit
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        await printToNetwork(receiptFromOrder(o, { operator: me?.name || "POS" }));
-                      }}
-                      className="shrink-0 w-9 h-9 rounded-lg bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-sm transition active:scale-95"
-                      title="Reprint receipt"
-                      aria-label="Reprint receipt"
-                    >
-                      🖨️
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            {todayOrders.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-slate-800 flex items-baseline justify-between">
-                <span className="text-xs uppercase tracking-wider text-slate-400 font-black">
-                  Today's Gross Sales
-                </span>
-                <span className="text-lg font-black text-emerald-400">
-                  {money(todayOrders.reduce((s, o) => s + o.total, 0))}
-                </span>
-              </div>
-            )}
-          </div>
         </div>
 
         <CommandMatrix
@@ -546,6 +477,75 @@ export default function SalesFloor() {
           onClose={() => setSavedOrder(null)}
         />
       )}
+
+      {/* Today's Sales — full list at bottom */}
+      <section className="p-3 lg:px-20">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-3 max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs uppercase tracking-wider text-slate-400 font-black">
+              Today's Sales · {today}
+            </h2>
+            {todayOrders.length > 0 && (
+              <span className="text-lg font-black text-emerald-400">
+                {money(todayOrders.reduce((s, o) => s + o.total, 0))}
+              </span>
+            )}
+          </div>
+          <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+            {todayOrders.length === 0 ? (
+              <div className="text-center text-slate-600 text-sm py-8">
+                No dispatches yet today.
+              </div>
+            ) : (
+              todayOrders.map((o) => {
+                const pending = o.pay_status === "PENDING";
+                return (
+                  <div
+                    key={o.id}
+                    onClick={pending ? () => reloadOrder(o) : undefined}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${
+                      pending
+                        ? "border-amber-600/40 bg-amber-500/5 cursor-pointer hover:bg-amber-500/10"
+                        : "border-slate-800 bg-slate-900"
+                    } ${editingId === o.id ? "ring-1 ring-sky-400" : ""}`}
+                    title={pending ? "Tap to reload this pending sale into the active cart" : undefined}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-sm font-bold truncate leading-tight ${pending ? "text-amber-200" : "text-slate-100"}`}>
+                        {o.customer}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {o.time} · {o.driver} · {o.qty} item{o.qty === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`text-sm font-black ${pending ? "text-amber-300" : "text-emerald-400"}`}>
+                        {money(o.total)}
+                      </div>
+                      {isAdmin && (
+                        <div className="text-[11px] text-slate-500 font-bold">
+                          +{money(o.profit)} profit
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await printToNetwork(receiptFromOrder(o, { operator: me?.name || "POS" }));
+                      }}
+                      className="shrink-0 w-9 h-9 rounded-lg bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-sm transition active:scale-95"
+                      title="Reprint receipt"
+                      aria-label="Reprint receipt"
+                    >
+                      🖨️
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

@@ -123,8 +123,12 @@ export async function POST(request: Request) {
     if (!driver) return Response.json({ error: "Driver is required." }, { status: 400 });
     if (!requested.length) return Response.json({ error: "Ticket is empty." }, { status: 400 });
 
-    // Load product master so costs are computed server-side only.
-    const productsRead = await readTab("PRODUCTS");
+    // Load product master & customers ONCE (single read each, not per item)
+    const [productsRead, customersRead] = await Promise.all([
+      readTab("PRODUCTS"),
+      readTab("CUSTOMERS"),
+    ]);
+
     const productMap = new Map(productsRead.rows.map(rowToProduct).map((p) => [p.id, p]));
 
     const items: TicketItem[] = [];
@@ -147,7 +151,6 @@ export async function POST(request: Request) {
 
     const totals = computeTicket(items, glovo || paymentMethod === "GLOVO");
 
-    const customersRead = await readTab("CUSTOMERS");
     const customers = customersRead.rows.map((r) => ({
       location: String(r.location ?? ""),
       phone: String(r.phone ?? ""),
@@ -176,8 +179,6 @@ export async function POST(request: Request) {
       mpesa_code: String(body.mpesa_code ?? body.mpesaCode ?? ""),
       notes,
       created_at: new Date().toISOString(),
-      // New CREDIT / unsettled rows carry a full outstanding balance; settled
-      // cash orders open with a zero balance so the debts ledger is accurate.
       balance: payStatus === "PENDING" ? Math.round(totals.subtotal * 100) / 100 : 0,
       last_payment_at: "",
     };
@@ -190,17 +191,19 @@ export async function POST(request: Request) {
       /* push is best-effort */
     });
 
-    // Decrement stock after the order is safely logged.
-    for (const it of items) {
+    // Batch stock updates: single read already done, use updateRow for each (sparse write)
+    // This avoids re-reading PRODUCTS tab for each item.
+    const stockUpdates = items.map((it) => {
       const product = productMap.get(it.productId)!;
       const pIdx = productsRead.rows.findIndex((r) => String(r.id) === it.productId);
-      if (pIdx >= 0) {
-        await updateRow("PRODUCTS", productsRead.rowNumbers[pIdx], {
-          stock: Math.max(0, product.stock - it.qty),
-          updated_at: new Date().toISOString(),
-        });
-      }
-    }
+      return pIdx >= 0
+        ? updateRow("PRODUCTS", productsRead.rowNumbers[pIdx], {
+            stock: Math.max(0, product.stock - it.qty),
+            updated_at: new Date().toISOString(),
+          })
+        : Promise.resolve();
+    });
+    await Promise.all(stockUpdates);
 
     return Response.json({ ok: true, order });
   } catch (err) {

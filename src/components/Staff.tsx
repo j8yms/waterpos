@@ -22,6 +22,7 @@ export default function Staff() {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const authorized = canManageStaff(me);
   const canSuspend = me?.role === "master" || (me?.role === "management" && me.name?.toLowerCase() === "vinnie");
+  const isMaster = me?.role === "master";
   const [showCreate, setShowCreate] = useState(false);
   const [newStaff, setNewStaff] = useState<NewStaffForm>({ name: "", role: "rider", pin: "" });
   const [creating, setCreating] = useState(false);
@@ -269,13 +270,15 @@ export default function Staff() {
                   <div className="flex items-center gap-2 shrink-0">
                     {confirmId === s.id ? (
                       <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => resetPin(s)}
-                          disabled={busyId === s.id}
-                          className="text-xs px-3 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black disabled:opacity-50"
-                        >
-                          {busyId === s.id ? "…" : "Confirm"}
-                        </button>
+                        {isMaster && (
+                          <button
+                            onClick={() => resetPin(s)}
+                            disabled={busyId === s.id}
+                            className="text-xs px-3 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black disabled:opacity-50"
+                          >
+                            {busyId === s.id ? "…" : "Confirm"}
+                          </button>
+                        )}
                         <button
                           onClick={() => setConfirmId(null)}
                           disabled={busyId === s.id}
@@ -285,17 +288,19 @@ export default function Staff() {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          setConfirmId(s.id);
-                          setFeedback(null);
-                        }}
-                        className="shrink-0 text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 font-black border border-slate-700"
-                      >
-                        Reset PIN
-                      </button>
+                      isMaster && (
+                        <button
+                          onClick={() => {
+                            setConfirmId(s.id);
+                            setFeedback(null);
+                          }}
+                          className="shrink-0 text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 font-black border border-slate-700"
+                        >
+                          Reset PIN
+                        </button>
+                      )
                     )}
-                    {canSuspend && (
+                    {isMaster && canSuspend && (
                       <button
                         onClick={() => toggleSuspend(s)}
                         disabled={busyId === s.id}
