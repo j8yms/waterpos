@@ -22,28 +22,52 @@ function isSession(data: LoginResponse | null | undefined): data is AuthSession 
   return !!data && !!data.token && !!data.user;
 }
 
-/** Synchronous safe staff initializer — runs before any render. */
-function getInitialStaff(): StaffMember[] {
-  try {
-    if (typeof window === "undefined") return [];
-    const cached = localStorage.getItem("waterpos.staff");
-    if (!cached) return [];
-    const parsed = JSON.parse(cached);
-    // Strict structural schema check to ensure valid records
-    if (!Array.isArray(parsed) || (parsed.length > 0 && !parsed[0]?.name)) {
-      localStorage.removeItem("waterpos.staff");
-      return [];
-    }
-    return parsed;
-  } catch (e) {
-    if (typeof window !== "undefined") localStorage.removeItem("waterpos.staff");
-    return [];
-  }
-}
-
 export default function PinLogin() {
   const router = useRouter();
-  const [staff, setStaff] = useState<StaffMember[]>(() => getInitialStaff());
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Load cached staff safely on client mount
+    try {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("waterpos.staff");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.name)) {
+            setStaff(parsed);
+          } else {
+            localStorage.removeItem("waterpos.staff");
+          }
+        }
+      }
+    } catch {
+      if (typeof window !== "undefined") localStorage.removeItem("waterpos.staff");
+    }
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-sky-900/40">
+              W
+            </div>
+            <h1 className="mt-4 text-xl font-black tracking-wide">MIST WATER AND GAS DISTRIBUTORS</h1>
+            <p className="text-sm text-slate-400 mt-1">Bulk Water POS · Local Terminal</p>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-slate-400">Initializing…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [stage, setStage] = useState<Stage>("identity");
   const [entry, setEntry] = useState("");

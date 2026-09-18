@@ -12,32 +12,36 @@ type Feedback = { kind: "ok" | "err"; text: string } | null;
 
 type NewStaffForm = { name: string; role: "rider" | "management"; pin: string };
 
-/** Synchronous safe staff initializer — runs before any render. */
-function getInitialStaff(): StaffMember[] {
-  try {
-    if (typeof window === "undefined") return [];
-    const cached = localStorage.getItem("waterpos.staff");
-    if (!cached) return [];
-    const parsed = JSON.parse(cached);
-    if (!Array.isArray(parsed) || (parsed.length > 0 && !parsed[0]?.name)) {
-      localStorage.removeItem("waterpos.staff");
-      return [];
-    }
-    return parsed;
-  } catch (e) {
-    if (typeof window !== "undefined") localStorage.removeItem("waterpos.staff");
-    return [];
-  }
-}
-
 export default function Staff() {
   const router = useRouter();
   const me = currentUser();
-  const [staff, setStaff] = useState<StaffMember[]>(() => getInitialStaff());
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Load cached staff safely on client mount
+    try {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("waterpos.staff");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && (parsed.length === 0 || parsed[0]?.name)) {
+            setStaff(parsed);
+          } else {
+            localStorage.removeItem("waterpos.staff");
+          }
+        }
+      }
+    } catch {
+      if (typeof window !== "undefined") localStorage.removeItem("waterpos.staff");
+    }
+  }, []);
+
   const authorized = canManageStaff(me);
   const canSuspend = me?.role === "master" || (me?.role === "management" && me.name?.toLowerCase() === "vinnie");
   const isMaster = me?.role === "master";
@@ -139,6 +143,28 @@ export default function Staff() {
     role === "rider"
       ? "bg-sky-500/15 text-sky-300"
       : "bg-emerald-500/15 text-emerald-300";
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-sky-900/40">
+              S
+            </div>
+            <h1 className="mt-4 text-xl font-black tracking-wide">MIST Staff</h1>
+            <p className="text-sm text-slate-400 mt-1">Directory · credential reset</p>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl">
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-slate-400">Initializing Staff Shell…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
