@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
         source: "/icons/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
+      // Network-first cache headers for API routes
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
     ];
   },
   /* config options here */

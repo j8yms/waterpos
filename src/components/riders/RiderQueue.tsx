@@ -17,6 +17,14 @@ function tryCache<T>(key: string): T | null {
   }
 }
 
+function notifyServiceWorkerClearAlarm() {
+  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.active?.postMessage({ type: "CLEAR_ALARM" });
+    }).catch(() => {});
+  }
+}
+
 export default function RiderQueue() {
   const router = useRouter();
   const me = currentUser();
@@ -61,9 +69,10 @@ export default function RiderQueue() {
     return () => window.clearInterval(handle);
   }, [load]);
 
-  // Claim an unassigned order
+  // Claim an unassigned/up-for-grabs order
   async function claimOrder(order: DispatchOrder) {
-    if (!order.id || order.driver.trim().toUpperCase() !== "UNASSIGNED") return;
+    const isUpForGrabs = order.driver.trim().toUpperCase() === "UP FOR GRABS" || order.driver.trim().toUpperCase() === "UNASSIGNED";
+    if (!order.id || !isUpForGrabs) return;
     setSaving(order.id);
     setErr(null);
     try {
@@ -71,6 +80,8 @@ export default function RiderQueue() {
       setOrders((list) =>
         list.map((o) => (o.id === order.id ? { ...o, driver: me?.name || "" } : o))
       );
+      // Notify service worker to stop the alarm
+      notifyServiceWorkerClearAlarm();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to claim order.");
     } finally {
@@ -102,7 +113,7 @@ export default function RiderQueue() {
 
   const pendingCount = orders.filter((o) => o.pay_status === "PENDING").length;
   const deliveredCount = orders.filter((o) => o.pay_status === "PAID").length;
-  const unassignedCount = orders.filter((o) => o.driver.trim().toUpperCase() === "UNASSIGNED").length;
+  const unassignedCount = orders.filter((o) => o.driver.trim().toUpperCase() === "UNASSIGNED" || o.driver.trim().toUpperCase() === "UP FOR GRABS").length;
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -163,7 +174,7 @@ export default function RiderQueue() {
               const delivered = o.pay_status === "PAID";
               const busy = saving === o.id;
               const isNew = newOrderIds.has(o.id);
-              const isUnassigned = o.driver.trim().toUpperCase() === "UNASSIGNED";
+              const isUnassigned = o.driver.trim().toUpperCase() === "UNASSIGNED" || o.driver.trim().toUpperCase() === "UP FOR GRABS";
               const isMine = o.driver.trim().toLowerCase() === me?.name?.toLowerCase();
               return (
                 <li
@@ -207,9 +218,9 @@ export default function RiderQueue() {
                     <button
                       onClick={() => claimOrder(o)}
                       disabled={busy}
-                      className="mt-3 w-full h-14 rounded-xl font-black bg-amber-600 hover:bg-amber-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-amber-900/30"
+                      className="mt-3 w-full h-14 rounded-xl font-black bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-emerald-900/30"
                     >
-                      {busy ? "…" : "⚡ Claim This Order"}
+                      {busy ? "…" : "ACCEPT ORDER 🟢"}
                     </button>
                   ) : isMine ? (
                     <button

@@ -1,9 +1,4 @@
-/* MIST POS service worker — dispatch push notification engine.
-   - Persistent background worker registered at install time.
-   - Fires a loud vibration-pattern notification (tag 'new-dispatch-alert',
-     renotify true) whenever the server pushes a new dispatch order.
-   - notificationclick auto-routes the operative URL (/pos/rider) or focuses
-     the already-open app window. */
+/* MIST POS service worker — dispatch push notification engine with continuous alarm for "Up for Grabs" orders. */
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -16,6 +11,36 @@ self.addEventListener("activate", (event) => {
 const DISPATCH_VIBRATION = [
   200, 100, 200, 100, 200, 300, 500, 200, 300, 100, 200, 150, 400,
 ];
+
+/* Persistent alarm interval for "Up for Grabs" orders */
+let alarmInterval = null;
+
+function startUpForGrabsAlarm(data) {
+  if (alarmInterval) return; // Already running
+
+  alarmInterval = setInterval(() => {
+    self.registration.showNotification('🚨 UNASSIGNED DISPATCH ACTIVE!', {
+      body: `${data.location} | ${data.product} | Collect: ${data.amount}`,
+      tag: 'up-for-grabs',
+      renotify: true,
+      vibrate: [1000, 500, 1000, 500, 2000], // Persistent long pulsing alert blocks
+      requireInteraction: true,
+      data: { url: '/pos/rider', type: 'up-for-grabs', orderId: data.orderId },
+    });
+
+    // Broadcast message hook to any open client view frames to play an interactive alert sound chime
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => client.postMessage({ type: 'PLAY_ALARM_SOUND' }));
+    });
+  }, 4000);
+}
+
+function stopUpForGrabsAlarm() {
+  if (alarmInterval) {
+    clearInterval(alarmInterval);
+    alarmInterval = null;
+  }
+}
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
@@ -31,6 +56,18 @@ self.addEventListener("push", (event) => {
   const title = data.title || "New Dispatch";
   const url = data.url || "/pos/rider";
 
+  // Handle "Up for Grabs" alarm type
+  if (data.type === 'UP_FOR_GRABS_ALERT') {
+    startUpForGrabsAlarm(data);
+    return;
+  }
+
+  // Handle clear-alarm command
+  if (data.type === 'CLEAR_ALARM') {
+    stopUpForGrabsAlarm();
+    return;
+  }
+
   const options = {
     body: data.body || "An order has been assigned to you.",
     icon: data.icon || "/icons/notification-icon.png",
@@ -42,7 +79,7 @@ self.addEventListener("push", (event) => {
       url,
       dateOfArrival: Date.now(),
     },
-    requireInteraction: true, // Keep notification visible until user acts
+    requireInteraction: true,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -82,10 +119,12 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-/* Minimal health message handler used by the PWA bootstrap to confirm the
-   service worker is alive and controlling the page. */
+/* Message handler for PWA bootstrap and alarm control */
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     event.waitUntil(self.skipWaiting());
+  }
+  if (event.data && event.data.type === "CLEAR_ALARM") {
+    stopUpForGrabsAlarm();
   }
 });
