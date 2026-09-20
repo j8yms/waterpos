@@ -51,7 +51,7 @@ export interface CartItem {
   color: string;
 }
 
-export type PayStatus = "PAID" | "PENDING";
+export type PayStatus = "PAID" | "PENDING" | "ON_TRANSIT" | "REJECTED";
 
 export type PaymentMethod = "CASH" | "MPESA" | "GLOVO" | "CREDIT";
 

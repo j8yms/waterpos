@@ -15,11 +15,18 @@ export async function PATCH(
   if (!id) return Response.json({ error: "Order ID required." }, { status: 400 });
 
   let body: Partial<{ pay_status: string; driver: string }>;
+  const validStatuses = ["PAID", "PENDING", "ON_TRANSIT", "REJECTED"];
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
+
+  // Validate pay_status if provided
+  if (body.pay_status && !validStatuses.includes(body.pay_status.toUpperCase())) {
+    return Response.json({ error: "Invalid pay_status." }, { status: 400 });
+  }
+  if (body.pay_status) body.pay_status = body.pay_status.toUpperCase();
 
   try {
     const read = await readTab("ORDERS");
