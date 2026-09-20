@@ -137,16 +137,18 @@ export default function RiderQueue() {
     return () => window.clearInterval(handle);
   }, [load]);
 
-  async function claimOrder(order: DispatchOrder) {
-    const isUpForGrabs = order.driver.trim().toUpperCase() === "UP FOR GRABS" || order.driver.trim().toUpperCase() === "UNASSIGNED";
+async function claimOrder(order: DispatchOrder) {
+    const isUpForGrabs = order.driver.trim().toUpperCase() === "UP FOR GRABS" || order.driver.trim().toUpperCase() === "UNASSIGNED" || order.driver.trim() === "";
     if (!order.id || !isUpForGrabs) return;
     setSaving(order.id);
     setErr(null);
     try {
       await api(`/api/orders/${order.id}`, { method: "PATCH", body: { driver: me?.name || "", pay_status: "PENDING" } });
-      setOrders((list) =>
-        list.map((o) => (o.id === order.id ? { ...o, driver: me?.name || "", pay_status: "PENDING" as const } : o))
-      );
+      // Force fresh fetch to avoid stale cache
+      const res = await api<{ orders: DispatchOrder[] }>(`/api/orders?date=${nairobiDate()}&_=${Date.now()}`);
+      setOrders(res.orders ?? []);
+      cacheAssignments(res.orders ?? []);
+      // Notify service worker to stop the alarm
       notifyServiceWorkerClearAlarm();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to claim order.");
@@ -161,9 +163,9 @@ export default function RiderQueue() {
     setErr(null);
     try {
       await api(`/api/orders/${order.id}`, { method: "PATCH", body: { driver: "UNASSIGNED", pay_status: "REJECTED" } });
-      setOrders((list) =>
-        list.map((o) => (o.id === order.id ? { ...o, driver: "UNASSIGNED", pay_status: "REJECTED" as const } : o))
-      );
+      const res = await api<{ orders: DispatchOrder[] }>(`/api/orders?date=${nairobiDate()}&_=${Date.now()}`);
+      setOrders(res.orders ?? []);
+      cacheAssignments(res.orders ?? []);
       notifyServiceWorkerClearAlarm();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to reject order.");
@@ -178,9 +180,9 @@ export default function RiderQueue() {
     setErr(null);
     try {
       await api(`/api/orders/${order.id}`, { method: "PATCH", body: { pay_status: "ON_TRANSIT" } });
-      setOrders((list) =>
-        list.map((o) => (o.id === order.id ? { ...o, pay_status: "ON_TRANSIT" as const } : o))
-      );
+      const res = await api<{ orders: DispatchOrder[] }>(`/api/orders?date=${nairobiDate()}&_=${Date.now()}`);
+      setOrders(res.orders ?? []);
+      cacheAssignments(res.orders ?? []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to start transit.");
     } finally {
@@ -194,9 +196,9 @@ export default function RiderQueue() {
     setErr(null);
     try {
       await api(`/api/orders/${order.id}`, { method: "PATCH", body: { pay_status: "PAID" } });
-      setOrders((list) =>
-        list.map((o) => (o.id === order.id ? { ...o, pay_status: "PAID" as const } : o))
-      );
+      const res = await api<{ orders: DispatchOrder[] }>(`/api/orders?date=${nairobiDate()}&_=${Date.now()}`);
+      setOrders(res.orders ?? []);
+      cacheAssignments(res.orders ?? []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Update failed.");
     } finally {

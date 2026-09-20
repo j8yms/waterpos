@@ -177,6 +177,8 @@ export async function notifyRiderOfDispatch(order: DispatchOrder): Promise<void>
     icon: NOTIFICATION_ICON,
     url: "/pos/rider",
     vibrate: [200, 100, 200, 100, 200, 300, 500, 200, 300],
+    requireInteraction: true,
+    tag: "new-dispatch",
   });
 
   await Promise.allSettled(
