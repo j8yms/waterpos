@@ -25,6 +25,16 @@ function notifyServiceWorkerClearAlarm() {
   }
 }
 
+function playNotificationSound(tone: string) {
+  try {
+    const audio = new Audio(`/sounds/${tone}.mp3`);
+    audio.volume = 0.8;
+    audio.play().catch(() => {});
+  } catch {
+    // fallback: silent
+  }
+}
+
 export default function RiderQueue() {
   const router = useRouter();
   const me = currentUser();
@@ -33,21 +43,80 @@ export default function RiderQueue() {
   const [saving, setSaving] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+  const [notificationTone, setNotificationTone] = useState<string>("default");
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Heartbeat to keep presence online
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const deviceIdRef = useRef<string>("default");
+
+  // Initialize device ID and notification tone from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("waterpos.rider.device_id");
+    if (stored) deviceIdRef.current = stored;
+    else {
+      const newId = `device-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem("waterpos.rider.device_id", newId);
+      deviceIdRef.current = newId;
+    }
+    const tone = localStorage.getItem("waterpos.rider.notification_tone");
+    if (tone) setNotificationTone(tone);
+  }, []);
+
+  // Send presence heartbeat
+  const sendHeartbeat = useCallback(async (status: "online" | "offline") => {
+    if (!me) return;
+    try {
+      await api("/api/rider/presence", {
+        method: status === "online" ? "POST" : "DELETE",
+        body: status === "online" ? { status: "online", device_id: deviceIdRef.current } : undefined,
+        silent: true,
+      });
+    } catch {
+      // silent fail
+    }
+  }, [me]);
+
+  // Start/stop heartbeat
+  useEffect(() => {
+    if (!me) return;
+    sendHeartbeat("online");
+    heartbeatRef.current = setInterval(() => sendHeartbeat("online"), 25_000);
+    return () => {
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      sendHeartbeat("offline");
+    };
+  }, [me, sendHeartbeat]);
+
+  // Visibility change handling
+  useEffect(() => {
+    if (!me) return;
+    const handleVisibility = () => {
+      if (document.hidden) {
+        sendHeartbeat("offline");
+      } else {
+        sendHeartbeat("online");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [me, sendHeartbeat]);
 
   const load = useCallback(async () => {
     if (!me) return;
     try {
       const res = await api<{ orders: DispatchOrder[] }>(`/api/orders?date=${nairobiDate()}`);
       const fresh = res.orders ?? [];
-      
-      // Detect newly assigned orders (not in current state)
+
       setOrders((prev) => {
         const prevIds = new Set(prev.map(o => o.id));
         const newlyAssigned = fresh.filter(o => !prevIds.has(o.id));
         if (newlyAssigned.length) {
           setNewOrderIds((s) => new Set([...s, ...newlyAssigned.map(o => o.id)]));
-          // Auto-clear "new" highlight after 8 seconds
           newlyAssigned.forEach(o => setTimeout(() => setNewOrderIds(s => { const ns = new Set(s); ns.delete(o.id); return ns; }), 8000));
+          // Play notification sound for new orders
+          newlyAssigned.forEach(() => playNotificationSound(notificationTone));
         }
         return fresh;
       });
@@ -59,9 +128,8 @@ export default function RiderQueue() {
     } finally {
       setLoading(false);
     }
-  }, [me]);
+  }, [me, notificationTone]);
 
-  // Initial load + periodic refresh (every 30s) — only updates changed orders
   useEffect(() => {
     load();
     flushPendingOps();
@@ -69,18 +137,16 @@ export default function RiderQueue() {
     return () => window.clearInterval(handle);
   }, [load]);
 
-  // Claim an unassigned/up-for-grabs order
   async function claimOrder(order: DispatchOrder) {
     const isUpForGrabs = order.driver.trim().toUpperCase() === "UP FOR GRABS" || order.driver.trim().toUpperCase() === "UNASSIGNED";
     if (!order.id || !isUpForGrabs) return;
     setSaving(order.id);
     setErr(null);
     try {
-      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { driver: me?.name || "" } });
+      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { driver: me?.name || "", pay_status: "PENDING" } });
       setOrders((list) =>
-        list.map((o) => (o.id === order.id ? { ...o, driver: me?.name || "" } : o))
+        list.map((o) => (o.id === order.id ? { ...o, driver: me?.name || "", pay_status: "PENDING" as const } : o))
       );
-      // Notify service worker to stop the alarm
       notifyServiceWorkerClearAlarm();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to claim order.");
@@ -89,7 +155,39 @@ export default function RiderQueue() {
     }
   }
 
-  // Mark as delivered (single action — no PENDING toggle)
+  async function rejectOrder(order: DispatchOrder) {
+    if (!order.id) return;
+    setSaving(order.id);
+    setErr(null);
+    try {
+      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { driver: "UNASSIGNED", pay_status: "REJECTED" } });
+      setOrders((list) =>
+        list.map((o) => (o.id === order.id ? { ...o, driver: "UNASSIGNED", pay_status: "REJECTED" as const } : o))
+      );
+      notifyServiceWorkerClearAlarm();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to reject order.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function startTransit(order: DispatchOrder) {
+    if (!order.id) return;
+    setSaving(order.id);
+    setErr(null);
+    try {
+      await api(`/api/orders/${order.id}`, { method: "PATCH", body: { pay_status: "ON_TRANSIT" } });
+      setOrders((list) =>
+        list.map((o) => (o.id === order.id ? { ...o, pay_status: "ON_TRANSIT" as const } : o))
+      );
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to start transit.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
   async function markDelivered(order: DispatchOrder) {
     if (!order.id) return;
     setSaving(order.id);
@@ -111,9 +209,18 @@ export default function RiderQueue() {
     router.replace("/");
   }
 
-  const pendingCount = orders.filter((o) => o.pay_status === "PENDING").length;
   const deliveredCount = orders.filter((o) => o.pay_status === "PAID").length;
+  const pendingCount = orders.filter((o) => o.pay_status === "PENDING").length;
+  const transitCount = orders.filter((o) => o.pay_status === "ON_TRANSIT").length;
   const unassignedCount = orders.filter((o) => o.driver.trim().toUpperCase() === "UNASSIGNED" || o.driver.trim().toUpperCase() === "UP FOR GRABS").length;
+
+  const tones = [
+    { value: "default", label: "Default" },
+    { value: "chime", label: "Chime" },
+    { value: "alert", label: "Alert" },
+    { value: "bell", label: "Bell" },
+    { value: "ding", label: "Ding" },
+  ];
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -128,16 +235,27 @@ export default function RiderQueue() {
               {me?.name} · {nairobiDate()}
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 font-bold"
-          >
-            Lock
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-500/20 text-slate-300 hover:text-sky-300 font-bold"
+            >
+              ⚙️
+            </button>
+            <button
+              onClick={logout}
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 font-bold"
+            >
+              Lock
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2 mt-2 text-[11px] font-black">
+        <div className="flex gap-2 mt-2 text-[11px] font-black flex-wrap">
           <span className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-300">
             {deliveredCount} Delivered
+          </span>
+          <span className="px-2 py-1 rounded-lg bg-sky-500/15 text-sky-300">
+            {transitCount} On Transit
           </span>
           <span className="px-2 py-1 rounded-lg bg-rose-500/15 text-rose-300">
             {pendingCount} Pending
@@ -149,6 +267,39 @@ export default function RiderQueue() {
           )}
         </div>
       </header>
+
+      {showSettings && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-md shadow-2xl">
+            <h2 className="font-black text-lg mb-4">Settings</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide">Notification Tone</label>
+                <select
+                  value={notificationTone}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNotificationTone(val);
+                    localStorage.setItem("waterpos.rider.notification_tone", val);
+                    playNotificationSound(val);
+                  }}
+                  className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  {tones.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full mt-4 px-4 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="flex-1 px-3 py-3">
         {err && (
@@ -172,6 +323,9 @@ export default function RiderQueue() {
           <ul className="space-y-3 max-w-2xl mx-auto">
             {orders.map((o) => {
               const delivered = o.pay_status === "PAID";
+              const onTransit = o.pay_status === "ON_TRANSIT";
+              const pending = o.pay_status === "PENDING";
+              const rejected = o.pay_status === "REJECTED";
               const busy = saving === o.id;
               const isNew = newOrderIds.has(o.id);
               const isUnassigned = o.driver.trim().toUpperCase() === "UNASSIGNED" || o.driver.trim().toUpperCase() === "UP FOR GRABS";
@@ -182,11 +336,15 @@ export default function RiderQueue() {
                   className={`rounded-2xl border p-3.5 transition-all duration-300 ${
                     delivered
                       ? "bg-emerald-950/40 border-emerald-700/50 opacity-60"
-                      : isUnassigned
-                        ? "bg-amber-950/30 border-amber-600/50 ring-2 ring-amber-500 animate-pulse"
-                        : isNew
-                          ? "bg-sky-950/30 border-sky-600/50 ring-2 ring-sky-500"
-                          : "bg-slate-900 border-slate-700"
+                      : onTransit
+                        ? "bg-sky-950/30 border-sky-600/50 ring-2 ring-sky-500"
+                        : rejected
+                          ? "bg-rose-950/30 border-rose-600/50 opacity-70"
+                          : isUnassigned
+                            ? "bg-amber-950/30 border-amber-600/50 ring-2 ring-amber-500 animate-pulse"
+                            : isNew
+                              ? "bg-sky-950/30 border-sky-600/50 ring-2 ring-sky-500"
+                              : "bg-slate-900 border-slate-700"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -199,11 +357,19 @@ export default function RiderQueue() {
                     <span
                       className={`shrink-0 text-[11px] font-black px-2 py-1 rounded-lg ${
                         delivered ? "bg-emerald-500/20 text-emerald-300"
+                        : onTransit ? "bg-sky-500/20 text-sky-300"
+                        : rejected ? "bg-rose-500/20 text-rose-300"
                         : isUnassigned ? "bg-amber-500/20 text-amber-300"
-                        : "bg-rose-500/20 text-rose-300"
+                        : pending ? "bg-rose-500/20 text-rose-300"
+                        : "bg-slate-500/20 text-slate-300"
                       }`}
                     >
-                      {delivered ? "✓ Delivered" : isUnassigned ? "⚡ Up for Grabs" : "Pending"}
+                      {delivered ? "✓ Delivered"
+                      : onTransit ? "🚚 On Transit"
+                      : rejected ? "✗ Rejected"
+                      : isUnassigned ? "⚡ Up for Grabs"
+                      : pending ? "⏳ Pending"
+                      : "Pending"}
                     </span>
                   </div>
 
@@ -215,14 +381,31 @@ export default function RiderQueue() {
                   {delivered ? (
                     <div className="mt-3 text-center text-xs text-slate-500">Completed — {o.time}</div>
                   ) : isUnassigned ? (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => claimOrder(o)}
+                        disabled={busy}
+                        className="flex-1 h-12 rounded-xl font-black bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-emerald-900/30"
+                      >
+                        {busy ? "…" : "ACCEPT ✓"}
+                      </button>
+                      <button
+                        onClick={() => rejectOrder(o)}
+                        disabled={busy}
+                        className="flex-1 h-12 rounded-xl font-black bg-rose-600 hover:bg-rose-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-rose-900/30"
+                      >
+                        {busy ? "…" : "REJECT ✗"}
+                      </button>
+                    </div>
+                  ) : isMine && pending ? (
                     <button
-                      onClick={() => claimOrder(o)}
+                      onClick={() => startTransit(o)}
                       disabled={busy}
-                      className="mt-3 w-full h-14 rounded-xl font-black bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-emerald-900/30"
+                      className="mt-3 w-full h-14 rounded-xl font-black bg-sky-600 hover:bg-sky-500 text-white transition active:scale-[0.97] disabled:opacity-50 shadow-lg shadow-sky-900/30"
                     >
-                      {busy ? "…" : "ACCEPT ORDER 🟢"}
+                      {busy ? "…" : "🚚 Start Transit"}
                     </button>
-                  ) : isMine ? (
+                  ) : isMine && onTransit ? (
                     <button
                       onClick={() => markDelivered(o)}
                       disabled={busy}
@@ -230,6 +413,8 @@ export default function RiderQueue() {
                     >
                       {busy ? "…" : "✓ Mark Delivered"}
                     </button>
+                  ) : isMine && rejected ? (
+                    <div className="mt-3 text-center text-xs text-rose-400">You rejected this order</div>
                   ) : (
                     <div className="mt-3 text-center text-xs text-slate-500">Assigned to {o.driver}</div>
                   )}

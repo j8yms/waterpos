@@ -12,10 +12,18 @@ type Feedback = { kind: "ok" | "err"; text: string } | null;
 
 type NewStaffForm = { name: string; role: "rider" | "management"; pin: string };
 
+type RiderPresence = {
+  rider: string;
+  status: "online" | "offline";
+  last_seen: string;
+  device_id: string;
+};
+
 export default function Staff() {
   const router = useRouter();
   const me = currentUser();
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [presence, setPresence] = useState<RiderPresence[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -53,20 +61,36 @@ export default function Staff() {
     if (!authorized) router.replace("/pos");
   }, [authorized, router]);
 
+  const loadPresence = useCallback(async () => {
+    try {
+      const data = await api<{ presence: RiderPresence[] }>("/api/rider/presence");
+      setPresence(Array.isArray(data?.presence) ? data.presence : []);
+    } catch {
+      setPresence([]);
+    }
+  }, []);
+
   const load = useCallback(async () => {
     try {
       const data = await api<{ staff: StaffMember[] }>("/api/staff");
       setStaff(Array.isArray(data?.staff) ? data.staff : []);
+      loadPresence();
     } catch (e) {
       setFeedback({ kind: "err", text: e instanceof Error ? e.message : "Failed to load staff." });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadPresence]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Poll presence every 15s
+  useEffect(() => {
+    const handle = setInterval(loadPresence, 15_000);
+    return () => clearInterval(handle);
+  }, [loadPresence]);
 
   function logout() {
     clearAuth();
@@ -278,9 +302,38 @@ export default function Staff() {
                   {creating ? "Adding…" : "Create Staff"}
                 </button>
               </div>
+)}
+        </div>
+      )}
+
+        {/* Rider Presence Panel */}
+        <div className="mb-4 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <h2 className="font-black text-slate-100 mb-3">Rider Presence (Live)</h2>
+          <div className="space-y-2">
+            {presence.length === 0 ? (
+              <p className="text-sm text-slate-500">No rider presence data yet.</p>
+            ) : (
+              presence.map((p) => {
+                const isOnline = p.status === "online";
+                const lastSeen = p.last_seen ? new Date(p.last_seen).toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" }) : "—";
+                return (
+                  <div key={`${p.rider}-${p.device_id}`} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-950/50 border border-slate-800">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-emerald-400 shadow-emerald-400/50" : "bg-slate-600"}`} />
+                      <div>
+                        <div className="font-bold text-slate-100">{p.rider}</div>
+                        <div className="text-[11px] text-slate-500">Last seen: {lastSeen} · {p.device_id}</div>
+                      </div>
+                    </div>
+                    <span className={`text-[11px] font-black uppercase tracking-wide px-2 py-1 rounded-md ${isOnline ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
+                      {isOnline ? "Online" : "Offline"}
+                    </span>
+                  </div>
+                );
+              })
             )}
           </div>
-        )}
+        </div>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
           {loading ? (
