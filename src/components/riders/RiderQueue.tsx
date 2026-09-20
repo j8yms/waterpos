@@ -133,7 +133,7 @@ export default function RiderQueue() {
   useEffect(() => {
     load();
     flushPendingOps();
-    const handle = window.setInterval(load, 30_000);
+    const handle = window.setInterval(load, 60_000);
     return () => window.clearInterval(handle);
   }, [load]);
 

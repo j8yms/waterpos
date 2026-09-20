@@ -5,6 +5,37 @@ import { DEFAULT_CUSTOMERS, DEFAULT_PRODUCTS, DEFAULT_STAFF, SEED_TABS, TABS } f
 import type { Customer, DispatchOrder, Product, Role } from "./types";
 import { toNumber } from "./numbers";
 
+/** Simple in-memory cache with TTL for read-heavy tabs */
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const readCache = new Map<string, CacheEntry<any>>();
+const CACHE_TTL_MS = 30_000; // 30 seconds
+
+function getCached<T>(key: string): T | null {
+  const entry = readCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    readCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setCache(key: string, data: any): void {
+  readCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function invalidateCache(key?: string): void {
+  if (key) {
+    readCache.delete(key);
+  } else {
+    readCache.clear();
+  }
+}
+
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
 let cached: sheets_v4.Sheets | null = null;
@@ -172,6 +203,9 @@ export function normalizeHeader(raw: string): string {
   return raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
 }
 
+/** Invalidate cached reads for a tab (call after writes). */
+export { invalidateCache };
+
 export interface TabRead {
   headers: string[];
   columnsByKey: Map<string, number>;
@@ -180,6 +214,10 @@ export interface TabRead {
 }
 
 export async function readTab(tabName: string): Promise<TabRead> {
+  const cacheKey = `tab:${tabName}`;
+  const cached = getCached<TabRead>(cacheKey);
+  if (cached) return cached;
+
   const sheets = await getSheets();
   const spreadsheetId = getSpreadsheetId();
 
@@ -190,19 +228,20 @@ export async function readTab(tabName: string): Promise<TabRead> {
       range: `${tabName}!A1:ZZ`,
     });
   } catch (err: any) {
-    // Google Sheets API throws 400 "Unable to parse range" when the tab
-    // doesn't exist yet. Return an empty result so callers fall back to
-    // their hardcoded defaults instead of crashing.
     const msg = String(err?.message ?? err ?? "");
     if (msg.includes("Unable to parse range") || msg.includes("not found") || msg.includes("SHEET_NOT_FOUND")) {
-      return { headers: [], columnsByKey: new Map(), rows: [], rowNumbers: [] };
+      const empty: TabRead = { headers: [], columnsByKey: new Map(), rows: [], rowNumbers: [] };
+      setCache(cacheKey, empty);
+      return empty;
     }
     throw err;
   }
   const values = res.data.values ?? [];
 
   if (!values.length) {
-    return { headers: [], columnsByKey: new Map(), rows: [], rowNumbers: [] };
+    const empty: TabRead = { headers: [], columnsByKey: new Map(), rows: [], rowNumbers: [] };
+    setCache(cacheKey, empty);
+    return empty;
   }
 
   const headers = values[0].map((h) => normalizeHeader(String(h)));
@@ -224,7 +263,9 @@ export async function readTab(tabName: string): Promise<TabRead> {
     rowNumbers.push(i + 1);
   }
 
-  return { headers, columnsByKey, rows, rowNumbers };
+  const result: TabRead = { headers, columnsByKey, rows, rowNumbers };
+  setCache(cacheKey, result);
+  return result;
 }
 
 export async function appendRow(tabName: string, record: Record<string, any>): Promise<void> {
@@ -240,6 +281,7 @@ export async function appendRow(tabName: string, record: Record<string, any>): P
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [values] },
   });
+  invalidateCache(`tab:${tabName}`);
 }
 
 /**
@@ -285,6 +327,7 @@ export async function appendRowsBatched(
 
     if (i + chunkSize < records.length) await sleep(2000);
   }
+  invalidateCache(`tab:${tabName}`);
 }
 
 export async function updateRow(
@@ -316,6 +359,7 @@ export async function updateRow(
       data,
     },
   });
+  invalidateCache(`tab:${tabName}`);
 }
 
 /**
@@ -352,6 +396,7 @@ export async function deleteRow(tabName: string, rowNumber: number): Promise<voi
       ],
     },
   });
+  invalidateCache(`tab:${tabName}`);
 }
 
 export async function seedInitialData(): Promise<boolean> {

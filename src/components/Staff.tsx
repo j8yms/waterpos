@@ -86,9 +86,9 @@ export default function Staff() {
     load();
   }, [load]);
 
-  // Poll presence every 15s
+  // Poll presence every 30s
   useEffect(() => {
-    const handle = setInterval(loadPresence, 15_000);
+    const handle = setInterval(loadPresence, 30_000);
     return () => clearInterval(handle);
   }, [loadPresence]);
 
