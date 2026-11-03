@@ -1,5 +1,5 @@
 import { requireRole, requireUser } from "@/lib/auth";
-import { appendRow, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow } from "@/lib/sheets";
+import { appendRow, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow, invalidateCache } from "@/lib/sheets";
 import { computeTicket, nairobiDate, nairobiTime, normalizeCustomerName, normalizeSheetDate, orderSummaryPublic } from "@/lib/pricing";
 import { notifyRiderOfDispatch } from "@/lib/push";
 import { newOrderId } from "@/lib/sync";
@@ -190,6 +190,7 @@ export async function POST(request: Request) {
     };
 
     await appendRow("ORDERS", order);
+    invalidateCache("tab:ORDERS");
 
     // Fire the dispatch push to the assigned rider once the order is safely
     // on the ledger. Non-blocking: a push failure must never fail the order.
@@ -210,6 +211,7 @@ export async function POST(request: Request) {
         : Promise.resolve();
     });
     await Promise.all(stockUpdates);
+    invalidateCache("tab:PRODUCTS");
 
     return Response.json({ ok: true, order });
   } catch (err) {

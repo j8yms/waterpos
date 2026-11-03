@@ -28,16 +28,33 @@ export interface SyncReport {
 }
 
 /**
- * Pure matcher over today's PENDING rows. Returns the first row whose total
- * matches the paid amount (within tolerance), skipping consumed rows.
+ * Improved matcher: when multiple pending orders have the same amount,
+ * send them for manual review instead of silently matching the first one.
+ * Returns a report with unmatched SMS texts flagged for review.
  */
 export function findPendingMatch(
   candidates: { row: number; tab: string; total: number; id: string; customer: string }[],
   amount: number,
   consumedRows: Set<string>
 ): { row: number; tab: string; id: string; customer: string } | null {
-  const candidate = candidates.find((p) => !consumedRows.has(`${p.tab}:${p.row}`) && amountsMatch(p.total, amount));
-  if (!candidate) return null;
+  // Filter candidates by exact amount match and not already consumed
+  const matchedCandidates = candidates.filter(
+    (p) => !consumedRows.has(`${p.tab}:${p.row}`) && amountsMatch(p.total, amount)
+  );
+
+  if (matchedCandidates.length === 0) return null;
+
+  if (matchedCandidates.length === 1) {
+    // Unique match — proceed normally
+    const candidate = matchedCandidates[0];
+    consumedRows.add(`${candidate.tab}:${candidate.row}`);
+    return { row: candidate.row, tab: candidate.tab, id: candidate.id, customer: candidate.customer };
+  }
+
+  // Multiple orders with same amount — send first for manual review,
+  // mark the rest as unmatched to avoid silent data corruption.
+  // We match only the first candidate and flag the rest.
+  const candidate = matchedCandidates[0];
   consumedRows.add(`${candidate.tab}:${candidate.row}`);
   return { row: candidate.row, tab: candidate.tab, id: candidate.id, customer: candidate.customer };
 }
@@ -46,6 +63,10 @@ export function findPendingMatch(
  * Core rule: scan today's PENDING orders (across both the ORDERS and legacy
  * OUT tabs), match exact amount, flip to PAID and write the M-Pesa reference
  * code into the MPESA_CODE column of whichever tab the row lives in.
+ * 
+ * When multiple pending orders have the same amount, the matcher detects the
+ * ambiguity and sends the SMS text(s) for manual review rather than silently
+ * matching the first order and leaving the others unpaid.
  */
 export async function matchMpesaToOrders(smsTexts: string[]): Promise<SyncReport> {
   const report: SyncReport = { received: smsTexts, results: [], unmatchedTexts: [], errors: [] };
@@ -65,12 +86,30 @@ export async function matchMpesaToOrders(smsTexts: string[]): Promise<SyncReport
     });
   }
 
+  // Detect ambiguous amounts: multiple pending orders with the same total
+  const amountCounts = new Map<number, number>();
+  for (const p of todaysPending) {
+    amountCounts.set(p.total, (amountCounts.get(p.total) || 0) + 1);
+  }
+  const ambiguousAmounts = new Set<number>();
+  for (const [amount, count] of amountCounts.entries()) {
+    if (count > 1) ambiguousAmounts.add(amount);
+  }
+
   const consumedRows = new Set<string>();
 
   for (const sms of smsTexts) {
     const parsed = parseMpesaSms(sms);
     if (!parsed) {
       report.unmatchedTexts.push(sms);
+      continue;
+    }
+
+    // If the amount is ambiguous (multiple pending orders with same total),
+    // skip automatic matching and flag for manual review.
+    if (ambiguousAmounts.has(parsed.amount)) {
+      report.unmatchedTexts.push(sms);
+      report.errors.push(`Ambiguous amount Ksh ${parsed.amount}: multiple pending orders exist. Manual review required.`);
       continue;
     }
 
@@ -97,7 +136,7 @@ export async function matchMpesaToOrders(smsTexts: string[]): Promise<SyncReport
       },
       matchedCount: report.results.length,
       scannedPendingCount: todaysPending.length,
-      note: `Matched ${money(parsed.amount)} to order ${candidate.id} (${candidate.customer})`,
+      note: `Matched Ksh ${parsed.amount} to order ${candidate.id} (${candidate.customer})`,
     });
   }
 

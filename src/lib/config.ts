@@ -3,9 +3,10 @@ import type { Product, Role } from "./types";
 export const NAIROBI_TZ = "Africa/Nairobi";
 export const GLOVO_COMMISSION = 0.2;
 
-// The fixed assignment rider array shown on the Sales Floor, per the refactor
-// spec. "New rider" is handled as a distinct dynamic option in the UI.
-export const DEFAULT_RIDERS: string[] = ["Wajakoya"];
+// Rider names are dynamically loaded from the staff/USERS sheet.
+// DEFAULT_RIDERS is kept for fallback only; the POS UI must use the
+// /api/staff endpoint to get the complete active rider list.
+export const DEFAULT_RIDERS: string[] = [];
 export const VAT_RATE = 0.16; // KRA VAT charged on the gross sale amount
 export const TAX_CODE = "B"; // KRA item tax type: B = regular VAT
 

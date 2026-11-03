@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { readTab, updateRow, rowToOrder } from "@/lib/sheets";
+import { readTab, updateRow, rowToOrder, invalidateCache } from "@/lib/sheets";
 import { SheetsConfigError } from "@/lib/sheets";
 
 export const runtime = "nodejs";
@@ -56,6 +56,7 @@ export async function PATCH(
 
       if (Object.keys(patch).length > 0) {
         await updateRow("OUT", outRead.rowNumbers[outIdx], patch);
+        invalidateCache("tab:OUT");
       }
 
       return Response.json({ ok: true });
@@ -78,6 +79,7 @@ export async function PATCH(
 
     if (Object.keys(patch).length > 0) {
       await updateRow("ORDERS", read.rowNumbers[idx], patch);
+      invalidateCache("tab:ORDERS");
     }
 
     return Response.json({ ok: true });

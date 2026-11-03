@@ -216,13 +216,18 @@ async function claimOrder(order: DispatchOrder) {
   const transitCount = orders.filter((o) => o.pay_status === "ON_TRANSIT").length;
   const unassignedCount = orders.filter((o) => o.driver.trim().toUpperCase() === "UNASSIGNED" || o.driver.trim().toUpperCase() === "UP FOR GRABS").length;
 
-  const tones = [
-    { value: "default", label: "Default" },
-    { value: "chime", label: "Chime" },
-    { value: "alert", label: "Alert" },
-    { value: "bell", label: "Bell" },
-    { value: "ding", label: "Ding" },
-  ];
+  const [testingPush, setTestingPush] = useState(false);
+
+  async function testPush() {
+    setTestingPush(true);
+    try {
+      await api("/api/notifications/test", { method: "POST", body: { rider: me?.name } });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Test push failed");
+    } finally {
+      setTestingPush(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -238,6 +243,13 @@ async function claimOrder(order: DispatchOrder) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={testPush}
+              disabled={testingPush}
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 font-bold disabled:opacity-50"
+            >
+              {testingPush ? "…" : "🔔 Test"}
+            </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-500/20 text-slate-300 hover:text-sky-300 font-bold"

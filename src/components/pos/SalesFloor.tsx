@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
 import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
 import { money, nairobiDate, computeTicket, parseProductLine } from "@/lib/pricing";
-import { DEFAULT_RIDERS, canManageStaff } from "@/lib/config";
+import { canManageStaff } from "@/lib/config";
 import ProductSearch from "./ProductSearch";
 import TransactionTable from "./TransactionTable";
 import CommandMatrix from "./CommandMatrix";
@@ -14,6 +14,8 @@ import PrintPrompt from "./PrintPrompt";
 import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
 import { printToNetwork, receiptFromOrder } from "@/lib/print";
+import { api } from "@/lib/client";
+import { notifyRiderOfDispatch } from "@/lib/push";
 
 const WALK_IN = "WALK-IN (No Rider)";
 
@@ -27,6 +29,7 @@ export default function SalesFloor() {
   const [glovo, setGlovo] = useState(false);
   const [customer, setCustomer] = useState({ location: "", phone: "", address: "" });
   const [driver, setDriver] = useState(WALK_IN);
+  const [riderOptions, setRiderOptions] = useState<{ id: string; name: string }[]>([]);
   const [newRiderName, setNewRiderName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [charging, setCharging] = useState(false);
@@ -74,13 +77,30 @@ export default function SalesFloor() {
   async function ringRider(rider: string) {
     if (!rider || rider === WALK_IN) return;
     try {
-      // Broadcast ring alarm to ALL riders
-      await api("/api/notifications/broadcast-alarm", {
-        method: "POST",
-        body: { message: `New order ready for ${rider}!` },
-      });
+      // Notify only the specific rider assigned (via dispatch notification)
+      const order: DispatchOrder = {
+        id: `temp-${Date.now()}`,
+        date: nairobiDate(),
+        time: timeStr(),
+        customer: "",
+        phone: "",
+        address: "",
+        product: "",
+        qty: 0,
+        unit_price: 0,
+        total: 0,
+        glovo: false,
+        pay_status: "PENDING",
+        payment_method: "",
+        driver: rider,
+        profit: 0,
+        mpesa_code: "",
+        notes: "",
+        created_at: new Date().toISOString(),
+      };
+      await notifyRiderOfDispatch(order);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Ring broadcast failed.");
+      setErr(e instanceof Error ? e.message : "Ring notification failed.");
     }
   }
 
@@ -90,6 +110,17 @@ export default function SalesFloor() {
       setProducts(cached);
     }
     loadProducts();
+    // Load rider options from the API
+    api<{ staff: any[] }>("/api/staff")
+      .then((res) => {
+        const riders = res.staff
+          .filter((s) => String(s.role).toLowerCase() === "rider")
+          .filter((s) => String(s.active ?? "TRUE").toUpperCase() !== "FALSE")
+          .filter((s) => s.name && String(s.name).trim() !== "")
+          .map((s) => ({ id: s.id, name: s.name }));
+        setRiderOptions(riders);
+      })
+      .catch(() => setRiderOptions([]));
     loadSummary();
     loadTodayOrders();
     flushPendingOps();
@@ -358,9 +389,9 @@ export default function SalesFloor() {
                 className="flex-1 h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
               >
                 <option value={WALK_IN}>WALK-IN (No Rider)</option>
-                {DEFAULT_RIDERS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
+                {riderOptions.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
                   </option>
                 ))}
                 <option value="NEW_RIDER">New rider…</option>
