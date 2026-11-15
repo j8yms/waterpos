@@ -398,6 +398,17 @@ export default function Catalog() {
               onPointerLeave={onTilePointerUp}
               className={`relative rounded-2xl p-3 text-left text-white shadow-lg min-h-[104px] flex flex-col justify-between select-none ${p.is_active ? "" : "opacity-60"}`}
             >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEdit(p);
+                }}
+                className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 hover:bg-black/50 text-white text-xs font-black flex items-center justify-center"
+                title="Edit product"
+                aria-label="Edit product"
+              >
+                E
+              </button>
               <div>
                 <div className="text-sm font-black leading-tight drop-shadow">{p.name}</div>
                 {!p.is_active && <div className="text-[10px] font-bold text-rose-200 drop-shadow">INACTIVE</div>}

@@ -89,7 +89,7 @@ export default function SalesFloor() {
       .then((res) => {
         const riders = res.staff
           .filter((s) => String(s.role).toLowerCase() === "rider")
-          .filter((s) => String(s.active ?? "TRUE").toUpperCase() !== "FALSE")
+          .filter((s) => !s.isSuspended && !s.is_reset_pending)
           .filter((s) => s.name && String(s.name).trim() !== "")
           .map((s) => ({ id: s.id, name: s.name }));
         setRiderOptions(riders);

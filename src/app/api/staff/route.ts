@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import { requireUser } from "@/lib/auth";
-import { canManageStaff } from "@/lib/config";
+
 import { listStaffUsers, findAndUpdateStaff, appendRow, getUsersFromSheet } from "@/lib/sheets";
+import { canManageStaff } from "@/lib/config";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export const runtime = "nodejs";
  */
 export async function GET(request: Request) {
   const user = requireUser(request);
-  if (!user || !canManageStaff(user)) {
+  if (!user || user.role !== "management" && user.role !== "master") {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }
 
