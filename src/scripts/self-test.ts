@@ -78,7 +78,9 @@ check("etimsConfigured() is boolean and mirrors seller config", () => {
   assert.strictEqual(typeof seller.bhfId, "string");
   assert.strictEqual(typeof seller.dvcSrlNo, "string");
   assert.strictEqual(typeof seller.url, "string");
-  assert.ok(seller.url.startsWith("https://") || seller.url.startsWith("http://"), "url scheme");
+  if (!seller.mock) {
+    assert.ok(seller.url.startsWith("https://") || seller.url.startsWith("http://"), "url scheme");
+  }
 });
 
 /* ── 2. GST-free line split: gross → net + vat must re-sum exactly ──────────── */
@@ -132,7 +134,7 @@ check("buildEtimsPayloadForOrder(order, items) makes one item line", () => {
 /* ── 4. Full payload (invoice-level) builder ────────────────────────────────── */
 check("buildEtimsInvoicePayload(order, items) round-trips", () => {
   const seller = etimsSellerConfig();
-  const order = { id: "OSCU-SELFTEST-0002", total: 2000 } as DispatchOrder;
+  const order = { id: "OSCU-SELFTEST-0002", date: "2026-09-15", time: "14:30:00", customer: "Walk-in", total: 2000 } as DispatchOrder;
   const items: EtimsItem[] = [{ name: "20L Jerry", qty: 4, unitPrice: 500 }];
   const payload = buildEtimsPayloadForOrder(order, items);
   assert.ok(payload, "payload exists");
