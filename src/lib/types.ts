@@ -26,11 +26,14 @@ export interface AuthSession {
 export interface Product {
   id: string;
   name: string;
+  category?: string;
   selling_price: number;
   wholesale_cost: number;
   unit: string;
   color: string;
   stock: number;
+  min_stock?: number;
+  description?: string;
   is_active: boolean;
 }
 
