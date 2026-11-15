@@ -35,6 +35,13 @@ function playNotificationSound(tone: string) {
   }
 }
 
+const tones = [
+  { value: "default", label: "Default" },
+  { value: "chime", label: "Chime" },
+  { value: "bell", label: "Bell" },
+  { value: "alert", label: "Alert" },
+];
+
 export default function RiderQueue() {
   const router = useRouter();
   const me = currentUser();

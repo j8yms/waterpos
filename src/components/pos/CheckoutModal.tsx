@@ -29,10 +29,6 @@ export default function CheckoutModal({
   initialLocation = "",
   glovo,
   setGlovo,
-  etimsOn,
-  setEtimsOn,
-  kraPin,
-  setKraPin,
   initialMethod = null,
 }: {
   open: boolean;
@@ -46,10 +42,6 @@ export default function CheckoutModal({
   initialLocation?: string;
   glovo: boolean;
   setGlovo: (v: boolean) => void;
-  etimsOn: boolean;
-  setEtimsOn: (v: boolean) => void;
-  kraPin: string;
-  setKraPin: (v: string) => void;
   initialMethod?: "CASH" | "MPESA" | "CREDIT" | null;
 }) {
   const [method, setMethod] = useState<"CASH" | "MPESA" | "CREDIT" | null>(null);
@@ -307,23 +299,6 @@ export default function CheckoutModal({
         {/* Sales channel toggle — not a payment method */}
         <Toggle checked={glovo} onChange={setGlovo} label="Glovo Order (20% commission deducted)" accent="amber" />
 
-        {/* eTIMS (optional flow) */}
-        <Toggle checked={etimsOn} onChange={setEtimsOn} label="Generate KRA eTIMS" accent="sky" />
-        {etimsOn && (
-          <label className="block">
-            <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
-              Customer KRA PIN
-            </span>
-            <input
-              value={kraPin}
-              onChange={(e) => setKraPin(e.target.value.toUpperCase())}
-              placeholder="e.g. A012345678P"
-              maxLength={14}
-              autoComplete="off"
-              className="w-full h-12 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
-            />
-          </label>
-        )}
 
         {/* Action nodes */}
         <div className="pt-1 space-y-2">

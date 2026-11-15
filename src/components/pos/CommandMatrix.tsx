@@ -60,10 +60,6 @@ export default function CommandMatrix({
   onMpesa,
   onDelete,
   onVoid,
-  etimsOn,
-  setEtimsOn,
-  kraPin,
-  setKraPin,
   showAdmin,
 }: {
   hasItems: boolean;
@@ -75,10 +71,6 @@ export default function CommandMatrix({
   onMpesa: () => void;
   onDelete: () => void;
   onVoid: () => void;
-  etimsOn: boolean;
-  setEtimsOn: (v: boolean) => void;
-  kraPin: string;
-  setKraPin: (v: string) => void;
   showAdmin: boolean;
 }) {
   const [armed, setArmed] = useState(false);
@@ -150,32 +142,24 @@ export default function CommandMatrix({
         />
       </div>
 
-      {/* Administrative sub-panel: KRA eTIMS (management only) */}
+      {/* Administrative sub-panel: management only */}
       {showAdmin && (
         <div className="rounded-2xl border border-slate-800 bg-slate-950 p-3 space-y-2">
           <div className="flex items-center justify-between">
             <h2 className="text-[10px] uppercase tracking-wider text-slate-500 font-black">
-              Admin · KRA eTIMS
+              Admin
             </h2>
-            <span className="text-[10px] font-bold text-slate-600">Vinnie · Emma · Tracy</span>
+            <span className="text-[10px] font-bold text-slate-600">Vinnie A� Emma A� Tracy</span>
           </div>
           <Toggle checked={glovo} onChange={onToggleGlovo} label="Glovo Order (20% commission)" accent="amber" />
-          <Toggle checked={etimsOn} onChange={setEtimsOn} label="Generate KRA eTIMS" accent="sky" />
-          {etimsOn && (
-            <label className="block">
-              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">
-                Customer KRA PIN
-              </span>
-              <input
-                value={kraPin}
-                onChange={(e) => setKraPin(e.target.value.toUpperCase())}
-                placeholder="e.g. A012345678P"
-                maxLength={14}
-                autoComplete="off"
-                className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
-              />
-            </label>
-          )}
+          <a
+            href="https://etims.kra.go.ke/basic/login/indexLogin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-11 rounded-xl bg-slate-800 hover:bg-sky-600/30 text-sky-300 hover:text-white font-black text-sm transition flex items-center justify-center gap-2 border border-slate-700"
+          >
+            KRA eTIMS Portal
+          </a>
         </div>
       )}
     </section>
