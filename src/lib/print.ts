@@ -10,6 +10,7 @@ export interface ReceiptLine {
 export interface ReceiptData {
   businessName: string;
   businessTagline?: string;
+  logoUrl?: string;  // Optional logo image URL
   orderId: string;
   date: string;
   time: string;
@@ -26,6 +27,7 @@ export interface ReceiptData {
   paymentMethod?: string;
   mpesaCode?: string;
   operator: string;
+  fontFamily?: string;  // Optional custom font family
 }
 
 const ESC = "\u001b";
@@ -47,12 +49,20 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
   const p = (s: string) => pad(s, L);
   const rule = "-".repeat(L);
 
+  // Font family: use custom if provided, otherwise default monospace for thermal printers
+  const fontFamily = data.fontFamily || "'Courier New', 'Lucida Console', monospace";
+
   // Width mapping: at 12px monospace, each character ≈ 0.43mm
   // 36 chars ≈ 15.5mm (too narrow for 58mm receipt)
   // 44 chars ≈ 18.9mm (better for 58mm with margins)
   // 52 chars ≈ 23.5mm (good for 58mm with wider layout)
   // 60 chars ≈ 25.8mm (for 80mm receipt)
   // Use 44 for 58mm, 60 for 80mm - user can adjust via env var
+
+  // Logo HTML if logoUrl is provided
+  const logoHtml = data.logoUrl
+    ? `<img src="${data.logoUrl}" alt="Business Logo" style="width: 30mm; height: auto; margin: 0 auto; display: block; margin-bottom: 4px;" />`
+    : `<pre class="big">${c(data.businessName)}</pre>`;
 
   const mpesaBlock = data.mpesaCode
     ? `
@@ -87,6 +97,8 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
     ? `<pre>${p("METHOD")} ${paymentLabel}</pre>`
     : "";
 
+  const footerText = data.businessTagline || "Bulk Water Supply";
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -98,7 +110,7 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
     margin: 0;
     padding: 0;
     background: #ffffff;
-    font-family: 'Courier New', 'Lucida Console', monospace;
+    font-family: ${fontFamily};
   }
   .receipt {
     width: 80mm;
@@ -118,32 +130,32 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
 </style>
 </head>
 <body>
-  <div class="receipt">
-    <pre class="big">${c(data.businessName)}</pre>
-    ${data.businessTagline ? `<pre>${c(data.businessTagline)}</pre>` : ""}
-    <pre class="sep">${rule}</pre>
-    ${mpesaBlock}
-    <pre>${p("ORDER")} ${data.orderId}</pre>
-    <pre>${p(data.date)} ${data.time}</pre>
-    <pre class="sep">${rule}</pre>
-    <pre>${p("CUST: " + data.customer)}</pre>
-    ${data.phone ? `<pre>${p("TEL: " + data.phone)}</pre>` : ""}
-    ${data.address ? `<pre>${p("ADD: " + data.address)}</pre>` : ""}
-    <pre class="sep">${rule}</pre>
-    ${linesHtml}
-    <pre class="sep">${rule}</pre>
-    <pre class="big">${p("TOTAL")} ${data.total.toFixed(2).padStart(12)}</pre>
-    ${glovoLine}
-    <pre>${p("PAYMENT")} ${status}</pre>
-    ${paymentLine}
-    <pre class="sep">${rule}</pre>
-    <pre>${p("DRIVER: " + data.driver)}</pre>
-    <pre>${p("OPERATOR: " + data.operator)}</pre>
-    <div class="footer">
-      <pre>${c("Thank you for your business!")}</pre>
-      <pre>${c("Bulk Water Supply")}</pre>
-    </div>
+<div class="receipt">
+  ${data.logoUrl ? `<img src="${data.logoUrl}" alt="Business Logo" style="width: 30mm; height: auto; margin: 0 auto; display: block; margin-bottom: 4px;" />` : `<pre class="big">${c(data.businessName)}</pre>`}
+  ${data.businessTagline ? `<pre>${c(data.businessTagline)}</pre>` : ""}
+  <pre class="sep">${rule}</pre>
+  ${mpesaBlock}
+  <pre>${p("ORDER")} ${data.orderId}</pre>
+  <pre>${p(data.date)} ${data.time}</pre>
+  <pre class="sep">${rule}</pre>
+  <pre>${p("CUST: " + data.customer)}</pre>
+  ${data.phone ? `<pre>${p("TEL: " + data.phone)}</pre>` : ""}
+  ${data.address ? `<pre>${p("ADD: " + data.address)}</pre>` : ""}
+  <pre class="sep">${rule}</pre>
+  ${linesHtml}
+  <pre class="sep">${rule}</pre>
+  <pre class="big">${p("TOTAL")} ${data.total.toFixed(2).padStart(12)}</pre>
+  ${glovoLine}
+  <pre>${p("PAYMENT")} ${status}</pre>
+  ${paymentLine}
+  <pre class="sep">${rule}</pre>
+  <pre>${p("DRIVER: " + data.driver)}</pre>
+  <pre>${p("OPERATOR: " + data.operator)}</pre>
+  <div class="footer">
+    <pre>${c("Thank you for your business!")}</pre>
+    <pre>${c(footerText)}</pre>
   </div>
+</div>
 </body>
 </html>`;
 }
@@ -250,6 +262,7 @@ export function receiptFromOrder(
 
   return {
     businessName: opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
+    logoUrl: opts.logoUrl,
     orderId: order.id,
     date: order.date,
     time: order.time,
@@ -266,5 +279,6 @@ export function receiptFromOrder(
     paymentMethod: order.payment_method || undefined,
     mpesaCode: order.mpesa_code || undefined,
     operator: opts.operator,
+    fontFamily: opts.fontFamily,
   };
 }
