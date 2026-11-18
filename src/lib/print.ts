@@ -40,7 +40,6 @@ function escCenter(s: string, width: number): string {
   return " ".repeat(padL) + s + " ".repeat(width - s.length - padL);
 }
 
-// Build a single ESC/POS receipt line with alignment
 function escLine(text: string, align: "left" | "center" | "right", width: number = 48): string {
   const padded = escPad(text, width);
   if (align === "left") return CMD_ALIGN_LEFT + padded + CR;
@@ -49,7 +48,7 @@ function escLine(text: string, align: "left" | "center" | "right", width: number
 }
 
 // Build the full ESC/POS receipt data buffer
-export function buildEscReceipt(data: {
+export function buildReceipt(data: {
   businessName: string;
   logoBase64: string | null;
   address: string;
@@ -66,100 +65,95 @@ export function buildEscReceipt(data: {
   paymentMethod: string;
   mpesaCode: string | null;
   outstandingBalance: number;
-}): Uint8Array {
-  const lines: number[] = [];
+}): string {
+  const lines: string[] = [];
 
   // ── Initialise printer ─────────────────────────────────
-  lines.push(...CMD_INIT.split("").map((c) => c.charCodeAt(0)));
+  lines.push(CMD_INIT);
 
   // ── Header: High-contrast 576px bitmap ────────────────
   // Note: Actual WebUSB send would be: printer.send(bitmapData)
-  // Here we add a placeholder ESC sequence for logo
-  lines.push(...CMD_ALIGN_CENTER.split("").map((c) => c.charCodeAt(0)));
+  // Here we add a placeholder for the logo
+  lines.push(CMD_ALIGN_CENTER);
 
   // ── Business Name (centered) ──────────────────────────
-  lines.push(...escLine(data.businessName, "center", 48).split("").map((c) => c.charCodeAt(0)));
+  lines.push(`${data.businessName}`);
 
   // ── Address ───────────────────────────────────────────
-  lines.push(...escLine(data.address, "left", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine(data.phone, "left", 48).split("").map((c) => c.charCodeAt(0)));
+  lines.push(data.address);
+  lines.push(data.phone);
 
   // ── TILL NO. ──────────────────────────────────────────
-  lines.push(...escLine("TILL NO. " + data.tillNumber, "left", 48).split("").map((c) => c.charCodeAt(0)));
+  lines.push(`TILL NO. ${data.tillNumber}`);
 
   // ── Dashed separator (48 chars) ───────────────────────
   const dash48 = "-".repeat(48);
-  lines.push(...escLine(dash48, "center", 48).split("").map((c) => c.charCodeAt(0)));
+  lines.push(dash48);
 
   // ── Metadata: Receipt No, Date/Time, Cashier, Driver ────
-  lines.push(...escLine("RECEIPT NO: " + data.orderNo, "left", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine("DATE/TIME: " + new Date().toLocaleString(), "left", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine("CASHIER/USER: " + data.cashier, "left", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine("DRIVER: " + data.driver, "left", 48).split("").map((c) => c.charCodeAt(0)));
+  lines.push(`RECEIPT NO: ${data.orderNo}`);
+  lines.push(`DATE/TIME: ${new Date().toLocaleString()}`);
+  lines.push(`CASHIER/USER: ${data.cashier}`);
+  lines.push(`DRIVER: ${data.driver}`);
 
   // ── Another dashed separator ────────────────────────────
-  lines.push(...escLine(dash48, "center", 48).split("").map((c) => c.charCodeAt(0)));
+  lines.push(dash48);
 
   // ── Items: 48-column format ────────────────────────────
   for (const item of data.items) {
-    // Line 1: Product name (left-aligned, truncated/padded to 48)
-    lines.push(...escLine(item.name, "left", 48).split("").map((c) => c.charCodeAt(0)));
+    // Line 1: Product name (left-aligned, padded to 48)
+    lines.push(`${item.name}`);
 
     // Line 2: Qty x Ksh Price left-aligned, Subtotal right-aligned
     const qtyPrice = `${item.qty} x Ksh ${item.unitPrice.toFixed(2)}`;
-    const subtotal = item.total.toFixed(2);
-    lines.push(...escLine(qtyPrice + " " + subtotal.padStart(6), "right", 48).split("").map((c) => c.charCodeAt(0)));
+    const subtotal = `${item.total.toFixed(2)}`;
+    lines.push(`${qtyPrice} ${subtotal.padStart(6)}`);
   }
 
   // ── Totals & Balances ──────────────────────────────────
   // Double-height + double-width bold TOTAL
-  lines.push(...CMD_DOUBLE_HEIGHT_ON.split("").map((c) => c.charCodeAt(0)));
-  lines.push(...CMD_DOUBLE_WIDTH_ON.split("").map((c) => c.charCodeAt(0)));
-  lines.push(...CMD_BOLD_ON.split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine("TOTAL", "center", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine(data.subtotal.toFixed(2).padStart(10) + " KSH", "right", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...CMD_BOLD_OFF.split("").map((c) => c.charCodeAt(0)));
-  lines.push(...CMD_DOUBLE_WIDTH_OFF.split("").map((c) => c.charCodeAt(0)));
-  lines.push(...CMD_DOUBLE_HEIGHT_OFF.split("").map((c) => c.charCodeAt(0)));
+  lines.push(CMD_DOUBLE_HEIGHT_ON);
+  lines.push(CMD_DOUBLE_WIDTH_ON);
+  lines.push(CMD_BOLD_ON);
+  lines.push(`TOTAL`);
+  lines.push(`${data.subtotal.toFixed(2).padStart(10)} KSH`);
+  lines.push(CMD_BOLD_OFF);
+  lines.push(CMD_DOUBLE_WIDTH_OFF);
+  lines.push(CMD_DOUBLE_HEIGHT_OFF);
 
   // ── Payment Status ─────────────────────────────────────
   const payLabel = data.payStatus === "PAID" ? "PAID" : "CREDIT UNPAID";
-  lines.push(...escLine("STATUS: " + payLabel, "left", 48).split("").map((c) => c.charCodeAt(0)))
+  lines.push(`STATUS: ${payLabel}`);
 
   // ── Paid Amount & Amount Due ───────────────────────────
-  lines.push(...escLine("PAID AMOUNT: " + data.subtotal.toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0)))
+  lines.push(`PAID AMOUNT: ${data.subtotal.toFixed(2)} KSH`);
+  lines.push(`AMOUNT DUE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
 
   // ── Customer Outstanding Balance ───────────────────────
-  lines.push(...escLine("OUTSTANDING BALANCE: " + (data.outstandingBalance || 0).toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0)))
+  lines.push(`OUTSTANDING BALANCE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
 
   // ── Payment Code footer ────────────────────────────────
-  lines.push(...escLine("PAYMENT CODE: " + (data.mpesaCode || "—"), "left", 48).split("").map((c) => c.charCodeAt(0)))
+  lines.push(`PAYMENT CODE: ${data.mpesaCode || "—"}`);
 
   // ── Auto-cut command ───────────────────────────────────
-  // In real WebUSB: printer.send(GS + "V" + String.fromCharCode(0x42) + String.fromCharCode(0x00));
-  // Here we append the command bytes
-  const cutCmd = GS.charCodeAt(0) + "V".charCodeAt(0) + 0x42 + 0x00;
-  lines.push(...[cutCmd]);
+  lines.push(CMD_CUT);
 
-  // ── Return combined Uint8Array ─────────────────────────
-  return new Uint8Array(lines);
+  // Return as string (will be sent to printer via WebUSB or serial)
+  return lines.join(LF);
 }
 
 // ──────────────────────────────────────────────────────────
-// Print Function: Node/WebUSB Bridge
+// Print Function: WebUSB Bridge
 // ──────────────────────────────────────────────────────────
 /**
- * Send receipt to local thermal printer via WebUSB or Node serial bridge.
+ * Send receipt to local thermal printer via WebUSB.
  * 
  * For WebUSB (browser):
  *   const printer = await navigator.usb.requestDevice({ filters: [{ vendorId: 0xXXXX }] });
  *   await printer.open();
- *   const data = buildEscReceipt(...);
- *   await printer.transferOut(1, data);
- * 
- * For Node.js/Python bridge:
- *   const { PythonShell } = require('python-shell');
- *   // Or use python-escpos, escpos-thermal, or similar library
+ *   const receiptData = buildReceipt({...});
+ *   const encoder = new TextEncoder();
+ *   await printer.transferOut(1, encoder.encode(receiptData));
  * 
  * @param data Receipt data built from receiptFromOrder
  */
@@ -184,24 +178,22 @@ export async function printReceiptEscPos(data: {
   // In a real WebUSB environment, this would send data directly to the printer:
   // const printer = await navigator.usb.getDevice();
   // await printer.open();
-  // await printer.transferOut(1, data);
+  // await printer.transferOut(1, new TextEncoder().encode(buildReceipt(data)));
 
-  // For now, log the buffer size and content for verification:
-  const receiptData = buildEscReceipt({
+  // For now, return the built receipt string for verification:
+  const receipt = buildReceipt({
     ...data,
     logoBase64: data.logoBase64 || null,
   });
-  console.log(`🖨️ ESC/POS Print buffer size: ${receiptData.byteLength} bytes`);
-  console.log("🖨️ First 200 bytes (hex):", Array.from(receiptData.slice(0, 200)).map(b => b.toString(16).padStart(2, "0")).join(" "));
+  console.log(`🖨️ ESC/POS Receipt ready (${receipt.length} chars)`);
+  console.log("🖨️ First 200 chars:", receipt.substring(0, 200));
   console.log("✅ ESC/POS receipt ready for USB thermal printer (80mm, Font A, high density)");
 
   // TODO: Uncomment for actual WebUSB send:
   // if (navigator.usb && navigator.usb.device) {
   //   await navigator.usb.device.open();
-  //   await navigator.usb.device.selectConfiguration(1);
-  //   await navigator.usb.device.claimInterface(0);
-  //   await navigator.usb.device.transferOut(1, data);
-  }
+  //   await printer.transferOut(1, new TextEncoder().encode(receipt));
+  // }
 }
 
 export function receiptFromOrder(
