@@ -79,11 +79,11 @@ export default function Catalog() {
     }
   }, []);
 
-  // Debounced search filter
-  const applySearch = useCallback((query: string) => {
+  // Search filter
+  useEffect(() => {
     if (searchTimeout) clearTimeout(searchTimeout);
-    setSearchTimeout(setTimeout(() => {
-      const lower = query.trim().toLowerCase();
+    const timeout = setTimeout(() => {
+      const lower = searchQuery.trim().toLowerCase();
       if (!lower) {
         // No search term - restore from cache (all products)
         const cached = cachedProducts();
@@ -94,17 +94,13 @@ export default function Catalog() {
       const cached = cachedProducts() ?? [];
       const filtered = cached.filter((p: Product) => p.name.toLowerCase().includes(lower) && p.is_active);
       setProducts(filtered);
-    }), 300);
-  }, []);
+    }, 300);
+    setSearchTimeout(timeout);
+  }, [searchQuery]);
 
   useEffect(() => {
     load();
   }, [load, searchQuery]);
-
-  // Apply search filter on query change
-  useEffect(() => {
-    applySearch(searchQuery);
-  }, [searchQuery, applySearch]);
 
   function logout() {
     clearAuth();
@@ -319,7 +315,6 @@ export default function Catalog() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                applySearch(e.target.value);
               }}
               placeholder="Filter products..."
               className="w-48 h-10 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none text-slate-100 text-base placeholder:text-slate-500"
