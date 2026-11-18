@@ -13,7 +13,7 @@ import CommandMatrix from "./CommandMatrix";
 import PrintPrompt from "./PrintPrompt";
 import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
-import { receiptFromOrder } from "@/lib/print";
+import { receiptFromOrder, printToNetwork } from "@/lib/print";
 
 const WALK_IN = "WALK-IN (No Rider)";
 

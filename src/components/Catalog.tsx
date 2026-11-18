@@ -86,12 +86,12 @@ export default function Catalog() {
       const lower = query.trim().toLowerCase();
       if (!lower) {
         // No search term - restore from cache (all products)
-        const cached = cacheProducts();
+        const cached = cachedProducts();
         setProducts(cached ?? []);
         return;
       }
       // Filter products by name match against cached products
-      const cached = cacheProducts() ?? [];
+      const cached = cachedProducts() ?? [];
       const filtered = cached.filter((p: Product) => p.name.toLowerCase().includes(lower) && p.is_active);
       setProducts(filtered);
     }), 300);

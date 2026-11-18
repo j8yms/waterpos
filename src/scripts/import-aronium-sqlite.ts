@@ -110,7 +110,7 @@ Options:
       selling_price: p.Price,
       wholesale_cost: p.Cost,
       unit: p.MeasurementUnit || "Btl",
-      color: p.Color || aroniumColor || "#475569",
+      color: p.Color || "#475569",
       stock: p.StockQty,
       is_active: p.IsEnabled === 1 ? "TRUE" : "FALSE",
       updated_at: new Date().toISOString(),
@@ -176,13 +176,13 @@ Options:
   if (previewOnly) {
     if (customersOnly) {
       // Export customers to CSV
-      const csvHeaders = ["id", "name", "phone"].join(",");
-      const csvRows = Array.from(customers.values()).map(c => `[${c.id ?? ""},"${c.name.replace(/"/g, '""')}",${c.phone}]`).join("\n");
+      const csvHeaders = ["name", "phone"].join(",");
+      const csvRows = Array.from(customers.values()).map(c => `[${c.name},${c.phone}]`).join("\n");
       writeFileSync("aronium-customers-preview.csv", csvHeaders + "\n" + csvRows, "utf8");
       console.log(`✅ Preview: ${customers.size} customers written to aronium-customers-preview.csv`);
     } else {
       const csvHeaders = LEDGER_HEADERS.join(",");
-      const csvRows = productsRows.map(r => LEDGER_HEADERS.map(h => r[h] ?? "")).map(v => `"${v.replace(/\"/g, '""')}"`).join(",");
+      const csvRows = productsRows.map(r => LEDGER_HEADERS.map(h => r[h] ?? "").join(",")).map(r => `"${r.replace(/\"/g, '""')}"`).join(",");
       writeFileSync("aronium-out-preview.csv", csvHeaders + "\n" + csvRows, "utf8");
       writeFileSync("aronium-credit-preview.json", JSON.stringify(creditRows, null, 2), "utf8");
       console.log(`✅ Preview: ${productsRows.length} products, ${creditRows.length} credit accounts`);
