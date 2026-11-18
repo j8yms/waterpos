@@ -192,6 +192,9 @@ export default function SalesFloor() {
     phone: string;
     location: string;
     print: boolean;
+    logoUrl?: string;
+    fontFamily?: string;
+    shopLocation?: string;
   }) {
     if (!cart.length || !riderIsSet() || charging) return;
     setCharging(true);
@@ -232,7 +235,13 @@ export default function SalesFloor() {
       // Auto-print if print flag is set; otherwise just save the order.
       if (payment.print) {
         // Print the receipt immediately via the network printer (or local fallback)
-        await printToNetwork(receiptFromOrder(res.order, { operator: me?.name || "POS" }));
+        await printToNetwork(receiptFromOrder(res.order, {
+          operator: me?.name || "POS",
+          logoUrl: payment.logoUrl,
+          fontFamily: payment.fontFamily,
+          customerName: payment.customerName,
+          shopLocation: payment.shopLocation,
+        }));
       }
       if (editingId && editingId !== res.order.id) {
         try {
