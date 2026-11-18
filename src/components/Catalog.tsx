@@ -73,7 +73,7 @@ export default function Catalog() {
       const res = await api<{ products: Product[] }>("/api/pos/products");
       setProducts(res.products);
       cacheProducts(res.products);
-      setErr(null);
+      setMsg(null);
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Product load failed." });
     }
@@ -86,13 +86,13 @@ export default function Catalog() {
       const lower = query.trim().toLowerCase();
       if (!lower) {
         // No search term - restore from cache (all products)
-        const cached = cachedProducts();
+        const cached = cacheProducts();
         setProducts(cached ?? []);
         return;
       }
       // Filter products by name match against cached products
-      const cached = cachedProducts() ?? [];
-      const filtered = cached.filter((p) => p.name.toLowerCase().includes(lower) && p.is_active);
+      const cached = cacheProducts() ?? [];
+      const filtered = cached.filter((p: Product) => p.name.toLowerCase().includes(lower) && p.is_active);
       setProducts(filtered);
     }), 300);
   }, []);

@@ -271,7 +271,6 @@ export function receiptFromOrder(
     date: order.date,
     time: order.time,
     customer: order.customer,
-    customerName: opts.customerName,
     phone: order.phone,
     address: order.address,
     driver: order.driver,
