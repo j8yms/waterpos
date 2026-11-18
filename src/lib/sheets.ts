@@ -566,12 +566,15 @@ export function rowToProduct(r: Record<string, any>): Product {
   return {
     id: String(r.id ?? crypto.randomUUID()),
     name: String(r.name ?? ""),
+    category: String(r.category ?? ""),
     selling_price: toNumber(r.selling_price),
     wholesale_cost: toNumber(r.wholesale_cost),
     unit: String(r.unit ?? ""),
     color: String(r.color ?? "#475569"),
     stock: Math.round(toNumber(r.stock)),
-    is_active: !["false", "0", "no", ""].includes(String(r.is_active).trim().toLowerCase()),
+    min_stock: r.min_stock === "" || r.min_stock === undefined ? undefined : Math.round(toNumber(r.min_stock)),
+    description: String(r.description ?? ""),
+    is_active: !["false", "0", "no", ""].includes(String(r.is_active ?? "true").trim().toLowerCase()),
   };
 }
 

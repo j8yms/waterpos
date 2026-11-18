@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
-import type { CartItem, DashboardSummary, DispatchOrder, EtimsItem, Product } from "@/lib/types";
+import type { CartItem, DashboardSummary, DispatchOrder, Product } from "@/lib/types";
 import { money, nairobiDate, computeTicket, parseProductLine } from "@/lib/pricing";
 import { canManageStaff } from "@/lib/config";
 import ProductSearch from "./ProductSearch";
@@ -14,8 +14,6 @@ import PrintPrompt from "./PrintPrompt";
 import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
 import { printToNetwork, receiptFromOrder } from "@/lib/print";
-import { api } from "@/lib/client";
-import { notifyRiderOfDispatch } from "@/lib/push";
 
 const WALK_IN = "WALK-IN (No Rider)";
 
@@ -36,9 +34,6 @@ export default function SalesFloor() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutMethod, setCheckoutMethod] = useState<"CASH" | "MPESA" | "CREDIT" | null>(null);
   const [savedOrder, setSavedOrder] = useState<DispatchOrder | null>(null);
-  const [savedItems, setSavedItems] = useState<EtimsItem[]>([]);
-  const [etimsOn, setEtimsOn] = useState(false);
-  const [kraPin, setKraPin] = useState("");
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [todayOrders, setTodayOrders] = useState<DispatchOrder[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -77,28 +72,7 @@ export default function SalesFloor() {
   async function ringRider(rider: string) {
     if (!rider || rider === WALK_IN) return;
     try {
-      // Notify only the specific rider assigned (via dispatch notification)
-      const order: DispatchOrder = {
-        id: `temp-${Date.now()}`,
-        date: nairobiDate(),
-        time: timeStr(),
-        customer: "",
-        phone: "",
-        address: "",
-        product: "",
-        qty: 0,
-        unit_price: 0,
-        total: 0,
-        glovo: false,
-        pay_status: "PENDING",
-        payment_method: "",
-        driver: rider,
-        profit: 0,
-        mpesa_code: "",
-        notes: "",
-        created_at: new Date().toISOString(),
-      };
-      await notifyRiderOfDispatch(order);
+      await api("/api/riders/ring", { method: "POST", body: { rider } });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Ring notification failed.");
     }
@@ -115,7 +89,7 @@ export default function SalesFloor() {
       .then((res) => {
         const riders = res.staff
           .filter((s) => String(s.role).toLowerCase() === "rider")
-          .filter((s) => String(s.active ?? "TRUE").toUpperCase() !== "FALSE")
+          .filter((s) => !s.isSuspended && !s.is_reset_pending)
           .filter((s) => s.name && String(s.name).trim() !== "")
           .map((s) => ({ id: s.id, name: s.name }));
         setRiderOptions(riders);
@@ -257,10 +231,8 @@ export default function SalesFloor() {
       }
       if (payment.print) {
         setSavedOrder(res.order);
-        setSavedItems(cart.map((it) => ({ name: it.name, qty: it.qty, unitPrice: it.unitPrice })));
       } else {
         setSavedOrder(null);
-        setSavedItems([]);
       }
       setCart([]);
       setSelected(null);
@@ -331,6 +303,16 @@ export default function SalesFloor() {
                 Staff
               </Link>
             )}
+            {isAdmin && (
+              <a
+                href="https://etims.kra.go.ke/basic/login/indexLogin"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300"
+              >
+                KRA eTIMS Portal
+              </a>
+            )}
           </nav>
           {me && (
             <div className="flex items-center gap-2">
@@ -368,6 +350,16 @@ export default function SalesFloor() {
             <Link href="/staff" className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Staff
             </Link>
+          )}
+          {isAdmin && (
+            <a
+              href="https://etims.kra.go.ke/basic/login/indexLogin"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-center px-2 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300"
+            >
+              KRA eTIMS Portal
+            </a>
           )}
         </nav>
 
@@ -464,10 +456,6 @@ export default function SalesFloor() {
           onMpesa={() => openCheckout("MPESA")}
           onDelete={deleteLine}
           onVoid={voidOrder}
-          etimsOn={etimsOn}
-          setEtimsOn={setEtimsOn}
-          kraPin={kraPin}
-          setKraPin={setKraPin}
           showAdmin={isAdmin}
         />
       </div>
@@ -485,10 +473,6 @@ export default function SalesFloor() {
           initialLocation={customer.address}
           glovo={glovo}
           setGlovo={setGlovo}
-          etimsOn={etimsOn}
-          setEtimsOn={setEtimsOn}
-          kraPin={kraPin}
-          setKraPin={setKraPin}
           initialMethod={checkoutMethod}
         />
       )}
@@ -496,18 +480,6 @@ export default function SalesFloor() {
       {savedOrder && (
         <PrintPrompt
           order={savedOrder}
-          items={savedItems}
-          initialEtimsOn={etimsOn}
-          initialKraPin={kraPin}
-          onEtimsRegister={async (kraPin: string) => {
-            const res = await api<{ ok: boolean; order: DispatchOrder }>(
-              "/api/etims/register",
-              { method: "POST", body: { orderId: savedOrder.id, items: savedItems, kraPin } }
-            );
-            const updated = res.order;
-            setSavedOrder(updated);
-            return updated;
-          }}
           onPrint={doPrint}
           onClose={() => setSavedOrder(null)}
         />

@@ -190,7 +190,6 @@ function kraSignature(tin: string, timestamp: string, secret: string): string {
     .toUpperCase();
 }
 
-let mockCounter = 0;
 
 /** Register one invoice with KRA (or return mock data when KRA_ETIMS_MOCK=true). */
 export async function registerEtimsInvoice(
@@ -199,8 +198,13 @@ export async function registerEtimsInvoice(
   invoiceNo: string
 ): Promise<EtimsResult> {
   if (seller.mock) {
-    mockCounter += 1;
-    const seq = (mockCounter % 100000) + 1;
+    // Deterministic per invoiceNo so repeated calls for the same invoice
+    // return the same KRA invoice number (mock mode only).
+    let hash = 0;
+    for (let i = 0; i < String(invoiceNo || "").length; i++) {
+      hash = (hash * 31 + String(invoiceNo).charCodeAt(i)) >>> 0;
+    }
+    const seq = (hash % 100000) + 1;
     const invoiceNumber = String((MOCK_INVOICE_BASE + seq).toLocaleString("en-US", { useGrouping: false }));
     return {
       invoiceNumber,

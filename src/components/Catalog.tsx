@@ -10,6 +10,7 @@ import { BigButton } from "@/components/ui";
 import type { Product } from "@/lib/types";
 
 const PALETTE = ["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#14b8a6", "#ec4899", "#f43f5e", "#eab308"];
+const CATEGORIES = ["water", "gas", "other"];
 
 interface Draft {
   name: string;
@@ -19,7 +20,34 @@ interface Draft {
   stock: string;
 }
 
+interface EditDraft {
+  name: string;
+  category: string;
+  selling_price: string;
+  wholesale_cost: string;
+  unit: string;
+  stock: string;
+  min_stock: string;
+  description: string;
+  color: string;
+  is_active: boolean;
+  adjustment_reason: string;
+}
+
 const EMPTY: Draft = { name: "", selling_price: "", wholesale_cost: "", unit: "", stock: "" };
+const EMPTY_EDIT: EditDraft = {
+  name: "",
+  category: "other",
+  selling_price: "",
+  wholesale_cost: "",
+  unit: "",
+  stock: "",
+  min_stock: "",
+  description: "",
+  color: "#475569",
+  is_active: true,
+  adjustment_reason: "",
+};
 
 export default function Catalog() {
   const router = useRouter();
@@ -35,10 +63,16 @@ export default function Catalog() {
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const armedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [editDraft, setEditDraft] = useState<EditDraft>(EMPTY_EDIT);
+  const [editBusy, setEditBusy] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const res = await api<{ products: Product[] }>("/api/pos/products");
       setProducts(res.products);
+      cacheProducts(res.products);
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load catalog." });
     }
@@ -55,6 +89,10 @@ export default function Catalog() {
 
   function patch(p: Partial<Draft>) {
     setDraft((d) => ({ ...d, ...p }));
+  }
+
+  function patchEdit(p: Partial<EditDraft>) {
+    setEditDraft((d) => ({ ...d, ...p }));
   }
 
   const canSave =
@@ -96,7 +134,6 @@ export default function Catalog() {
     setDraft(EMPTY);
   }
 
-  // --- Admin delete (long-press / right-click arms the trash overlay) ---
   function disarm() {
     setArmedId(null);
     if (armedTimer.current) clearTimeout(armedTimer.current);
@@ -145,6 +182,73 @@ export default function Catalog() {
     }
   }
 
+  function openEdit(p: Product) {
+    setEditing(p);
+    setEditDraft({
+      name: p.name,
+      category: p.category || "other",
+      selling_price: String(p.selling_price),
+      wholesale_cost: String(p.wholesale_cost),
+      unit: p.unit,
+      stock: String(p.stock),
+      min_stock: p.min_stock === undefined ? "" : String(p.min_stock),
+      description: p.description || "",
+      color: p.color,
+      is_active: p.is_active,
+      adjustment_reason: "",
+    });
+    setConfirmSave(false);
+  }
+
+  function closeEdit() {
+    setEditing(null);
+    setEditDraft(EMPTY_EDIT);
+    setConfirmSave(false);
+  }
+
+  const stockChanged =
+    editing !== null && Number(editDraft.stock || 0) !== editing.stock;
+
+  const canSaveEdit =
+    editing !== null &&
+    editDraft.name.trim().length > 0 &&
+    Number(editDraft.selling_price || "0") >= 0 &&
+    editDraft.unit.trim().length > 0 &&
+    Number(editDraft.stock || "0") >= 0 &&
+    (editDraft.min_stock === "" || Number(editDraft.min_stock) >= 0) &&
+    (!stockChanged || editDraft.adjustment_reason.trim().length > 0);
+
+  async function doSaveEdit() {
+    if (!editing || !canSaveEdit) return;
+    setEditBusy(true);
+    setMsg(null);
+    try {
+      const body: Record<string, any> = {
+        name: editDraft.name.trim(),
+        category: editDraft.category,
+        selling_price: Number(editDraft.selling_price || 0),
+        wholesale_cost: Number(editDraft.wholesale_cost || 0),
+        unit: editDraft.unit.trim(),
+        stock: Number(editDraft.stock || 0),
+        min_stock: editDraft.min_stock === "" ? null : Number(editDraft.min_stock),
+        description: editDraft.description,
+        color: editDraft.color,
+        is_active: editDraft.is_active,
+      };
+      if (stockChanged) body.adjustment_reason = editDraft.adjustment_reason.trim();
+
+      await api(`/api/pos/products/${editing.id}`, { method: "PATCH", body });
+      setMsg({ kind: "ok", text: `"${editDraft.name.trim()}" updated.` });
+      closeEdit();
+      load();
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to update product." });
+    } finally {
+      setEditBusy(false);
+      setConfirmSave(false);
+    }
+  }
+
   const field = (label: string, key: keyof Draft, opts: { inputMode?: "decimal"; type?: string } = {}) => (
     <label className="block">
       <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">{label}</span>
@@ -160,6 +264,20 @@ export default function Catalog() {
     </label>
   );
 
+  const editField = (label: string, key: keyof EditDraft, opts: { inputMode?: "decimal"; type?: string } = {}) => (
+    <label className="block">
+      <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">{label}</span>
+      <input
+        value={String(editDraft[key])}
+        onChange={(e) => patchEdit({ [key]: e.target.value })}
+        inputMode={opts.inputMode}
+        type={opts.type ?? "text"}
+        autoComplete="off"
+        className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base placeholder:text-slate-600"
+      />
+    </label>
+  );
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <header className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-3 py-2">
@@ -169,7 +287,7 @@ export default function Catalog() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-black leading-tight truncate">Product Catalog</div>
-            <div className="text-[11px] text-slate-400 leading-tight">Inventory master · add new items</div>
+            <div className="text-[11px] text-slate-400 leading-tight">Inventory master — add or edit items</div>
           </div>
           <nav className="hidden sm:flex items-center gap-1 text-sm">
             <Link href="/pos" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
@@ -216,7 +334,7 @@ export default function Catalog() {
             onClick={() => (showForm ? close() : setShowForm(true))}
             className="h-11 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-black text-sm shadow-lg shadow-emerald-900/30 hover:brightness-110 active:scale-[0.97] transition"
           >
-            {showForm ? "✕ Close" : "+ Add New Product"}
+            {showForm ? "Close" : "+ Add New Product"}
           </button>
         </div>
 
@@ -232,7 +350,6 @@ export default function Catalog() {
           </div>
         )}
 
-        {/* Add New Product form */}
         {showForm && (
           <section className="rounded-2xl border border-emerald-500/30 bg-slate-950 p-4 space-y-3">
             <h3 className="text-xs uppercase tracking-wider text-emerald-300 font-black">
@@ -255,7 +372,7 @@ export default function Catalog() {
                     : "bg-slate-800 text-slate-500"
                 }`}
               >
-                {busy ? "Saving…" : "Save to Catalog"}
+                {busy ? "Saving..." : "Save to Catalog"}
               </BigButton>
               <button
                 onClick={close}
@@ -267,7 +384,6 @@ export default function Catalog() {
           </section>
         )}
 
-        {/* Catalog grid */}
         <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
           {products.map((p) => (
             <div
@@ -280,10 +396,22 @@ export default function Catalog() {
               onPointerDown={() => onTilePointerDown(p.id)}
               onPointerUp={onTilePointerUp}
               onPointerLeave={onTilePointerUp}
-              className="relative rounded-2xl p-3 text-left text-white shadow-lg min-h-[104px] flex flex-col justify-between select-none"
+              className={`relative rounded-2xl p-3 text-left text-white shadow-lg min-h-[104px] flex flex-col justify-between select-none ${p.is_active ? "" : "opacity-60"}`}
             >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEdit(p);
+                }}
+                className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 hover:bg-black/50 text-white text-xs font-black flex items-center justify-center"
+                title="Edit product"
+                aria-label="Edit product"
+              >
+                E
+              </button>
               <div>
                 <div className="text-sm font-black leading-tight drop-shadow">{p.name}</div>
+                {!p.is_active && <div className="text-[10px] font-bold text-rose-200 drop-shadow">INACTIVE</div>}
               </div>
               <div>
                 <div className="text-xl font-black drop-shadow">{money(p.selling_price)}</div>
@@ -295,15 +423,24 @@ export default function Catalog() {
                 </div>
               </div>
 
-              {/* Admin delete overlay — long-press or right-click to arm */}
               {armedId === p.id && (
-                <div className="absolute inset-0 rounded-2xl bg-rose-950/85 backdrop-blur-sm flex items-center justify-center gap-2 p-2">
+                <div className="absolute inset-0 rounded-2xl bg-slate-950/85 backdrop-blur-sm flex items-center justify-center gap-2 p-2">
+                  <button
+                    onClick={() => {
+                      disarm();
+                      openEdit(p);
+                    }}
+                    disabled={busy}
+                    className="h-11 px-3 flex-1 rounded-xl bg-sky-500 text-white font-black text-xs hover:bg-sky-400 active:scale-95 transition"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => deleteProduct(p)}
                     disabled={busy}
                     className="h-11 px-3 flex-1 rounded-xl bg-rose-500 text-white font-black text-xs hover:bg-rose-400 active:scale-95 transition"
                   >
-                    {busy ? "…" : "🗑 DELETE"}
+                    {busy ? "..." : "Delete"}
                   </button>
                   <button
                     onClick={disarm}
@@ -318,11 +455,162 @@ export default function Catalog() {
           ))}
           {products.length === 0 && (
             <div className="col-span-full text-center text-slate-600 py-10 text-sm">
-              Catalog is empty — click “+ Add New Product” to create the first item.
+              Catalog is empty — click "+ Add New Product" to create the first item.
             </div>
           )}
         </section>
       </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeEdit} />
+          <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-slate-700 bg-slate-950 p-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black text-slate-100">Edit Product</h2>
+              <button
+                onClick={closeEdit}
+                className="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-slate-100 font-black"
+              >
+                X
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="block sm:col-span-2">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Product Name *</span>
+                <input
+                  value={editDraft.name}
+                  onChange={(e) => patchEdit({ name: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Category</span>
+                <select
+                  value={editDraft.category}
+                  onChange={(e) => patchEdit({ category: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Unit Size *</span>
+                <input
+                  value={editDraft.unit}
+                  onChange={(e) => patchEdit({ unit: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Retail Price (Ksh)</span>
+                <input
+                  type="number"
+                  value={editDraft.selling_price}
+                  onChange={(e) => patchEdit({ selling_price: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Wholesale / Cost (Ksh)</span>
+                <input
+                  type="number"
+                  value={editDraft.wholesale_cost}
+                  onChange={(e) => patchEdit({ wholesale_cost: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Current Stock</span>
+                <input
+                  type="number"
+                  value={editDraft.stock}
+                  onChange={(e) => patchEdit({ stock: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Min / Reorder Level</span>
+                <input
+                  type="number"
+                  value={editDraft.min_stock}
+                  onChange={(e) => patchEdit({ min_stock: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Description</span>
+                <textarea
+                  value={editDraft.description}
+                  onChange={(e) => patchEdit({ description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="flex items-center gap-2 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={editDraft.is_active}
+                  onChange={(e) => patchEdit({ is_active: e.target.checked })}
+                />
+                <span className="text-sm font-bold text-slate-200">Active (available for sale)</span>
+              </label>
+              {stockChanged && (
+                <label className="block sm:col-span-2">
+                  <span className="text-[11px] uppercase tracking-wider text-amber-400 font-bold mb-1 block">Stock Adjustment Reason *</span>
+                  <input
+                    value={editDraft.adjustment_reason}
+                    onChange={(e) => patchEdit({ adjustment_reason: e.target.value })}
+                    placeholder="e.g. Damaged goods, recount, restock"
+                    className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-amber-600/50 focus:border-amber-500 outline-none text-slate-100 text-base"
+                  />
+                </label>
+              )}
+            </div>
+
+            {!confirmSave ? (
+              <button
+                onClick={() => {
+                  if (!canSaveEdit) return;
+                  setConfirmSave(true);
+                }}
+                disabled={!canSaveEdit || editBusy}
+                className={`w-full h-12 rounded-2xl font-black ${
+                  canSaveEdit
+                    ? "bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-lg"
+                    : "bg-slate-800 text-slate-500"
+                }`}
+              >
+                Save Changes
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-amber-300 font-bold">
+                  Confirm saving changes to "{editDraft.name.trim()}"?
+                  {stockChanged ? " Stock quantity will be adjusted and recorded." : ""}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirmSave(false)}
+                    className="flex-1 h-12 rounded-2xl bg-slate-800 text-slate-300 font-black"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={doSaveEdit}
+                    disabled={editBusy}
+                    className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-black"
+                  >
+                    {editBusy ? "Saving..." : "Confirm Save"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

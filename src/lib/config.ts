@@ -105,7 +105,8 @@ export const LEDGER_HEADERS: string[] = [
 ];
 
 export const TABS: Record<string, string[]> = {
-  PRODUCTS: ["id", "name", "selling_price", "wholesale_cost", "unit", "color", "stock", "is_active", "updated_at"],
+  PRODUCTS: ["id", "name", "category", "selling_price", "wholesale_cost", "unit", "color", "stock", "min_stock", "description", "is_active", "updated_at"],
+  STOCK_ADJUSTMENTS: ["id", "product_id", "product_name", "previous_stock", "new_stock", "change", "reason", "adjusted_by", "adjusted_at"],
   CUSTOMERS: ["id", "location", "phone", "address", "notes", "is_active", "updated_at"],
   // ORDERS is the live dispatch ledger; OUT is the legacy tab earlier
   // spreadsheet versions used. Both share the same layout so reads,
@@ -123,4 +124,4 @@ export const TABS: Record<string, string[]> = {
   SUBSCRIPTIONS: ["rider", "endpoint", "p256dh", "auth", "created_at"],
 };
 
-export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS", "SUBSCRIPTIONS"];
+export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS", "SUBSCRIPTIONS", "STOCK_ADJUSTMENTS"];

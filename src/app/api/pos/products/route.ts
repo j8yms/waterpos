@@ -36,20 +36,21 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, selling_price, wholesale_cost, unit, color, stock } = body;
+    const { name, category, selling_price, wholesale_cost, unit, color, stock, min_stock, description } = body;
     if (!name) return Response.json({ error: "Product name is required." }, { status: 400 });
 
     const id = "p" + Math.random().toString(36).slice(2, 8);
-    // Header-driven append keeps PRODUCTS rows aligned with the sheet's
-    // column set (TABS.PRODUCTS), matching the customer / order flow.
     await appendRow("PRODUCTS", {
       id,
       name: String(name),
+      category: String(category ?? ""),
       selling_price: Number(selling_price ?? 0),
       wholesale_cost: Number(wholesale_cost ?? 0),
       unit: String(unit ?? "Btl"),
       color: String(color ?? "#475569"),
       stock: Number(stock ?? 0),
+      min_stock: min_stock === undefined || min_stock === null || min_stock === "" ? "" : Number(min_stock),
+      description: String(description ?? ""),
       is_active: "TRUE",
       updated_at: new Date().toISOString(),
     });
