@@ -1,6 +1,6 @@
 /**
  * Import Aronium SQLite database → Google Sheets (OUT + CREDIT tabs).
- *   npx tsx src/scripts/import-aronium-sqlite.ts <aronium.db> [--spreadsheet-id <id>] [--skip-out-rows] [--staging-sheet-id <id>]
+ *   npx tsx src/scripts/import-aronium-sqlite.ts <aronium.db> [options]
  *
  * Authoritative decisions (2026-09-17):
  * - Target sheet: 1pHZakiGRit91Age0-Axi8wPLRycHneDtF8cQwR-LlCM (primary, NOT backup)
@@ -10,6 +10,7 @@
  * - Unit size: blank where Aronium MeasurementUnit is null
  * - Phone: blank for historical (0/993 customers have phones in Aronium)
  * - NEW: --skip-out-rows flag controls whether sales/OUT data is imported
+ * - NEW: --customers-only flag imports only customers (skip products & credit)
  */
 
 import { readFileSync, existsSync, writeFileSync } from "fs";
@@ -51,6 +52,7 @@ async function main() {
   const stagingSheetId = args.find((a) => a.startsWith("--staging-sheet-id="))?.split("=")[1];
   const previewOnly = args.includes("--preview-only");
   const skipOutRows = args.includes("--skip-out-rows"); // NEW: skip sales/OUT data
+  const customersOnly = args.includes("--customers-only"); // NEW: import only customers
 
   const TARGET_SHEET_ID = spreadsheetIdFlag ?? YOUR_LIVE_SHEET_ID;
   const IS_STAGING = !!stagingSheetId;
@@ -65,28 +67,13 @@ Options:
   --staging-sheet-id=<id>   Write to a staging/test sheet instead of primary
   --preview-only            Only generate CSV/JSON preview files, no Sheets API calls
   --skip-out-rows           Skip importing sales/OUT data (ignores the 9007 OUT rows)
+  --customers-only          Import only customers (skip products & credit data)
 `);
     process.exit(1);
   }
 
   // ─── Connect to SQLite database ───
   const db = new DatabaseSync(dbPath);
-
-  // ─── Extract Products + Stock ───
-  const products = db.prepare(`
-    SELECT p.Id, p.Name, p.Code, p.PLU, p.MeasurementUnit, p.Price, p.Cost, p.Markup,
-           p.IsEnabled, p.Color AS aroniumColor, p.ProductGroupId,
-           COALESCE(s.Quantity, 0) AS StockQty
-    FROM Product p
-    LEFT JOIN Stock s ON s.ProductId = p.Id AND s.WarehouseId = 1
-    WHERE p.IsEnabled = 1
-    ORDER BY p.ProductGroupId, p.Name
-  `).all();
-
-  const groups = new Map<number, { name: string; color: string }>();
-  for (const g of db.prepare("SELECT * FROM ProductGroup").all()) {
-    groups.set(g.Id, { name: g.Name, color: g.Color });
-  }
 
   // ─── Extract Customers ───
   const users = new Map<number, { name: string }>();
@@ -99,10 +86,25 @@ Options:
     customers.set(c.Id, { name: c.Name?.trim() ?? "", phone: c.PhoneNumber?.trim() ?? "" });
   }
 
-  // ─── Build PRODUCTS rows for Google Sheets ───
-  const productsRows: Record<string, any>[] = [];
-  products.forEach((p: any) => {
-    productsRows.push({
+  // ─── Extract Products + Stock (only if not customers-only) ───
+  let productsRows: Record<string, any>[] = [];
+  if (!customersOnly) {
+    const products = db.prepare(`
+      SELECT p.Id, p.Name, p.Code, p.PLU, p.MeasurementUnit, p.Price, p.Cost, p.Markup,
+             p.IsEnabled, p.Color AS aroniumColor, p.ProductGroupId,
+             COALESCE(s.Quantity, 0) AS StockQty
+      FROM Product p
+      LEFT JOIN Stock s ON s.ProductId = p.Id AND s.WarehouseId = 1
+      WHERE p.IsEnabled = 1
+      ORDER BY p.ProductGroupId, p.Name
+    `).all();
+
+    const groups = new Map<number, { name: string; color: string }>();
+    for (const g of db.prepare("SELECT * FROM ProductGroup").all()) {
+      groups.set(g.Id, { name: g.Name, color: g.Color });
+    }
+
+    productsRows = products.map((p: any) => ({
       id: "p" + Math.random().toString(36).slice(2, 8),
       name: p.Name,
       selling_price: p.Price,
@@ -112,37 +114,40 @@ Options:
       stock: p.StockQty,
       is_active: p.IsEnabled === 1 ? "TRUE" : "FALSE",
       updated_at: new Date().toISOString(),
-    });
-  });
-
-  // ─── Extract Credit Balances (Definition C: PaidStatus=1 ∧ CREDIT UNPAID payment) ───
-  const creditDocs = db.prepare(`
-    SELECT d.Id, d.Number, d.CustomerId, d.Date, d.Total, d.PaidStatus, d.Note
-    FROM Document d
-    JOIN Payment p ON p.DocumentId = d.Id
-    JOIN PaymentType pt ON pt.Id = p.PaymentTypeId
-    WHERE d.DocumentTypeId = 2
-      AND d.PaidStatus = 1
-      AND pt.Name = 'CREDIT UNPAID'
-      AND d.Total > 0
-    ORDER BY d.Id
-  `).all();
-
-  // Aggregate by customer
-  const creditByCustomer = new Map<number, { name: string; phone: string; total: number; docs: number; latestDate: string }>();
-  for (const doc of creditDocs) {
-    const cust = customers.get(doc.CustomerId) ?? { name: "WALK-IN CUSTOMER", phone: "" };
-    const existing = creditByCustomer.get(doc.CustomerId) ?? { name: cust.name, phone: cust.phone, total: 0, docs: 0, latestDate: "" };
-    existing.total += Number(doc.Total ?? 0);
-    existing.docs += 1;
-    if (doc.Date > existing.latestDate) existing.latestDate = doc.Date;
-    creditByCustomer.set(doc.CustomerId, existing);
+    }));
   }
 
-  // ─── Build CREDIT rows for Google Sheets ───
-  const creditRows: Record<string, any>[] = [];
-  creditByCustomer.forEach((data, custId) => {
-    creditRows.push({
+  // ─── Extract Credit Balances (only if not customers-only) ───
+  let creditRows: Record<string, any>[] = [];
+  if (!customersOnly) {
+    const creditDocs = db.prepare(`
+      SELECT d.Id, d.Number, d.CustomerId, d.Date, d.Total, d.PaidStatus, d.Note
+      FROM Document d
+      JOIN Payment p ON p.DocumentId = d.Id
+      JOIN PaymentType pt ON pt.Id = p.PaymentTypeId
+      WHERE d.DocumentTypeId = 2
+        AND d.PaidStatus = 1
+        AND pt.Name = 'CREDIT UNPAID'
+        AND d.Total > 0
+      ORDER BY d.Id
+    `).all();
+
+    // Aggregate by customer
+    const creditByCustomer = new Map<number, { name: string; phone: string; total: number; docs: number; latestDate: string }>();
+    for (const doc of creditDocs) {
+      const cust = customers.get(doc.CustomerId) ?? { name: "WALK-IN CUSTOMER", phone: "" };
+      const existing = creditByCustomer.get(doc.CustomerId) ?? { name: cust.name, phone: cust.phone, total: 0, docs: 0, latestDate: "" };
+      existing.total += Number(doc.Total ?? 0);
+      existing.docs += 1;
+      if (doc.Date > existing.latestDate) existing.latestDate = doc.Date;
+      creditByCustomer.set(doc.CustomerId, existing);
+    }
+
+    const CREDIT_HEADERS = [
+      "id", "customer", "phone", "address", "outstanding", "currency", "notes", "created_at", "updated_at",
+    ];
+
+    creditRows = Object.values(creditByCustomer).map((data: any) => ({
       id: "c" + Math.random().toString(36).slice(2, 8),
       customer: data.name,
       phone: data.phone,
@@ -152,8 +157,8 @@ Options:
       notes: `Historical opening balance from ${data.docs} unpaid credit invoice(s) as of ${data.latestDate}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
-  });
+    }));
+  }
 
   // ─── LEDGER & CREDIT HEADERS ───
   const LEDGER_HEADERS = [
@@ -169,21 +174,19 @@ Options:
 
   // ─── Preview Mode: generate CSV/JSON files, no Sheets API calls ───
   if (previewOnly) {
-    const csvHeaders = LEDGER_HEADERS.join(",");
-    const csvRows = productsRows.map(r => LEDGER_HEADERS.map(h => r[h] ?? "")).map(v => `"${v.replace(/"/g, '""')}"`).join(",");
-    writeFileSync("aronium-out-preview.csv", csvHeaders + "\n" + csvRows, "utf8");
-
-    writeFileSync("aronium-credit-preview.json", JSON.stringify(creditRows, null, 2), "utf8");
-
-    console.log(`\n── Import summary (${dryRun ? "DRY RUN — nothing written" : "written to PRODUCTS/CREDIT/OUT preview")} ────`);
-    console.log(`  added:   ${productsRows.length} products`);
-    console.log(`  updated: 0 (new products only)`);
-    console.log(`  skipped (already exist): 0`);
-    console.log(`  CREDIT accounts: ${creditRows.length}`);
-    console.log(`  OUT preview: written to aronium-out-preview.csv`);
-    console.log(`  CREDIT preview: written to aronium-credit-preview.json`);
-    console.log(`\nTarget sheet: ${TARGET_SHEET_ID} ${IS_STAGING ? "(STAGING)" : "(PRIMARY)"}`);
-    console.log(`Mode: ${dryRun ? "DRY RUN" : "PREVIEW ONLY"}`);
+    if (customersOnly) {
+      // Export customers to CSV
+      const csvHeaders = ["id", "name", "phone"].join(",");
+      const csvRows = Array.from(customers.values()).map(c => `[${c.id ?? ""},"${c.name.replace(/"/g, '""')}",${c.phone}]`).join("\n");
+      writeFileSync("aronium-customers-preview.csv", csvHeaders + "\n" + csvRows, "utf8");
+      console.log(`✅ Preview: ${customers.size} customers written to aronium-customers-preview.csv`);
+    } else {
+      const csvHeaders = LEDGER_HEADERS.join(",");
+      const csvRows = productsRows.map(r => LEDGER_HEADERS.map(h => r[h] ?? "")).map(v => `"${v.replace(/\"/g, '""')}"`).join(",");
+      writeFileSync("aronium-out-preview.csv", csvHeaders + "\n" + csvRows, "utf8");
+      writeFileSync("aronium-credit-preview.json", JSON.stringify(creditRows, null, 2), "utf8");
+      console.log(`✅ Preview: ${productsRows.length} products, ${creditRows.length} credit accounts`);
+    }
     db.close();
     process.exit(0);
   }
@@ -192,9 +195,15 @@ Options:
   if (dryRun) {
     console.log("\n=== DRY RUN SUMMARY ===");
     console.log(`TARGET SHEET: ${TARGET_SHEET_ID} ${IS_STAGING ? "(STAGING)" : "(PRIMARY)"}`);
-    console.log(`  OUT rows to append: ${skipOutRows ? 0 : 9007}`);
-    console.log(`  PRODUCTS rows to append: ${productsRows.length}`);
-    console.log(`  CREDIT rows to append: ${creditRows.length}`);
+    if (customersOnly) {
+      console.log(`  Customers to import: ${customers.size}`);
+      console.log(`  Products: SKIPPED (--customers-only flag)`);
+      console.log(`  Credit: SKIPPED (--customers-only flag)`);
+    } else {
+      console.log(`  OUT rows to append: ${skipOutRows ? 0 : 9007}`);
+      console.log(`  PRODUCTS rows to append: ${productsRows.length}`);
+      console.log(`  CREDIT rows to append: ${creditRows.length}`);
+    }
     console.log(`\nTarget sheet: ${TARGET_SHEET_ID} ${IS_STAGING ? "(STAGING)" : "(PRIMARY)"}`);
     console.log(`Mode: ${dryRun ? "DRY RUN" : "LIVE WRITE"}`);
     db.close();
@@ -215,7 +224,54 @@ Options:
 
     console.log("Current spreadsheet sheets:", existingSheets);
 
-    // Add PRODUCTS tab if not present
+    // Add CUSTOMERS tab if not present (when importing customers)
+    if (customersOnly) {
+      const customersTab = existingSheets.includes("CUSTOMERS") ? "CUSTOMERS" : null;
+      if (!customersTab) {
+        console.log("Creating CUSTOMERS tab...");
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: targetSheetId,
+          requestBody: {
+            requests: [{
+              addSheet: {
+                properties: { title: "CUSTOMERS", gridProperties: { rowCount: 1000, columnCount: 3 } }
+              }
+            }]
+          }
+        });
+        // Write headers
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: targetSheetId,
+          range: "CUSTOMERS!A1",
+          valueInputOption: "USER_ENTERED",
+          requestBody: { values: [["id", "name", "phone"]] }
+        });
+      }
+
+      // Append CUSTOMERS rows
+      if (customers.size > 0) {
+        console.log(`Appending ${customers.size} rows to CUSTOMERS...`);
+        const chunkSize = 100;
+        const customerRows = Array.from(customers.values()).map((c: any, i) => [c.id ?? `c${i + 1}`, c.name, c.phone]);
+        for (let i = 0; i < customerRows.length; i += chunkSize) {
+          const chunk = customerRows.slice(i, i + chunkSize);
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: targetSheetId,
+            range: "CUSTOMERS!A1",
+            valueInputOption: "USER_ENTERED",
+            requestBody: { values: chunk }
+          });
+        }
+      }
+
+      console.log("\n✅ Import complete!");
+      console.log(`  TARGET SHEET: ${targetSheetId}`);
+      console.log(`  CUSTOMERS: ${customers.size} accounts imported`);
+      db.close();
+      process.exit(0);
+    }
+
+    // Normal flow: PRODUCTS tab
     const productsTab = existingSheets.includes("PRODUCTS") ? "PRODUCTS" : null;
     if (!productsTab) {
       console.log("Creating PRODUCTS tab...");
@@ -238,7 +294,7 @@ Options:
       });
     }
 
-    // Append PRODUCTS rows
+    // Append PRODUCTS rows (only if not customers-only)
     if (productsRows.length > 0) {
       console.log(`Appending ${productsRows.length} rows to PRODUCTS...`);
       const chunkSize = 100;
@@ -254,52 +310,59 @@ Options:
       }
     }
 
-    // Add CREDIT tab if not present
-    const creditTab = existingSheets.includes("CREDIT") ? "CREDIT" : null;
-    if (!creditTab) {
-      console.log("Creating CREDIT tab...");
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: targetSheetId,
-        requestBody: {
-          requests: [{
-            addSheet: {
-              properties: { title: "CREDIT", gridProperties: { rowCount: 1000, columnCount: CREDIT_HEADERS.length } }
-            }
-          }]
-        }
-      });
-      // Write headers
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: targetSheetId,
-        range: "CREDIT!A1",
-        valueInputOption: "RAW",
-        requestBody: { values: [CREDIT_HEADERS] }
-      });
-    }
+    // Add CREDIT tab if not present (only if not customers-only)
+    if (!customersOnly) {
+      const creditTab = existingSheets.includes("CREDIT") ? "CREDIT" : null;
+      if (!creditTab) {
+        console.log("Creating CREDIT tab...");
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: targetSheetId,
+          requestBody: {
+            requests: [{
+              addSheet: {
+                properties: { title: "CREDIT", gridProperties: { rowCount: 1000, columnCount: CREDIT_HEADERS.length } }
+              }
+            }]
+          }
+        });
+        // Write headers
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: targetSheetId,
+          range: "CREDIT!A1",
+          valueInputOption: "RAW",
+          requestBody: { values: [CREDIT_HEADERS] }
+        });
+      }
 
-    // Append CREDIT rows
-    if (creditRows.length > 0) {
-      console.log(`Appending ${creditRows.length} rows to CREDIT...`);
-      await appendRowsBatched("CREDIT", creditRows);
+      // Append CREDIT rows
+      if (creditRows.length > 0) {
+        console.log(`Appending ${creditRows.length} rows to CREDIT...`);
+        await appendRowsBatched("CREDIT", creditRows);
+      }
     }
 
     // --- OUT ROWS: Skip if --skip-out-rows flag is set ---
-    if (!skipOutRows) {
+    if (!skipOutRows && !customersOnly) {
       console.log(`Appending OUT rows (9007 from 7107 sales documents)...`);
-      // The original script logic would build and append 9007 OUT rows
-      // Per user request, we document this but the --skip-out-rows flag prevents it
       console.log("OUT rows would be appended (use --skip-out-rows to prevent this)");
+    } else if (customersOnly) {
+      console.log("OUT rows: SKIPPED (--customers-only mode)");
     } else {
       console.log("OUT rows SKIPPED per --skip-out-rows flag (as requested - ignoring sales data)");
     }
 
     console.log("\n✅ Import complete!");
-    console.log(`  TARGET SHEET: ${targetSheetId}`);
-    console.log(`  OUT: ${skipOutRows ? 0 : '9007 rows (sales data - skipped per request)'}`);
-    console.log(`  PRODUCTS: ${productsRows.length} rows imported`);
-    console.log(`  CREDIT: ${creditRows.length} accounts imported`);
-    const totalOutstanding = creditRows.reduce((s, r) => s + r.outstanding, 0);
-    console.log(`  Total outstanding: KES ${totalOutstanding.toLocaleString()}`);
+    if (customersOnly) {
+      console.log(`  TARGET SHEET: ${targetSheetId}`);
+      console.log(`  CUSTOMERS: ${customers.size} accounts imported`);
+    } else {
+      console.log(`  TARGET SHEET: ${targetSheetId}`);
+      console.log(`  OUT: ${skipOutRows ? 0 : '9007 rows (sales data - skipped per request)'}`);
+      console.log(`  PRODUCTS: ${productsRows.length} rows imported`);
+      console.log(`  CREDIT: ${creditRows.length} accounts imported`);
+      const totalOutstanding = creditRows.reduce((s: number, r: any) => s + r.outstanding, 0);
+      console.log(`  Total outstanding: KES ${totalOutstanding.toLocaleString()}`);
+    }
 
   } catch (err) {
     console.error("❌ Import failed:", err instanceof Error ? err.message : err);
@@ -309,7 +372,4 @@ Options:
   }
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+main();

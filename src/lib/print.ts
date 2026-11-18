@@ -47,6 +47,13 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
   const p = (s: string) => pad(s, L);
   const rule = "-".repeat(L);
 
+  // Width mapping: at 12px monospace, each character ≈ 0.43mm
+  // 36 chars ≈ 15.5mm (too narrow for 58mm receipt)
+  // 44 chars ≈ 18.9mm (better for 58mm with margins)
+  // 52 chars ≈ 23.5mm (good for 58mm with wider layout)
+  // 60 chars ≈ 25.8mm (for 80mm receipt)
+  // Use 44 for 58mm, 60 for 80mm - user can adjust via env var
+
   const mpesaBlock = data.mpesaCode
     ? `
       <div class="mpesa-bar">${c("*** M-PESA PAYMENT ***")}</div>
