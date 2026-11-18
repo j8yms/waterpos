@@ -385,6 +385,14 @@ export default function Catalog() {
             >
               <span
                 className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 hover:bg-black/50 text-white text-xs font-black flex items-center justify-center"
+                title="Delete product"
+                aria-label="Delete product"
+                onClick={() => deleteProduct(p)}
+              >
+                ✕
+              </span>
+              <span
+                className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 hover:bg-black/50 text-white text-xs font-black flex items-center justify-center"
                 title="Edit product"
                 aria-label="Edit product"
               >
