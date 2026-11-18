@@ -68,6 +68,10 @@ export default function Catalog() {
   const [editBusy, setEditBusy] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
 
+  // --- SEARCH ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
   const load = useCallback(async () => {
     try {
       const res = await api<{ products: Product[] }>("/api/pos/products");
@@ -78,9 +82,32 @@ export default function Catalog() {
     }
   }, []);
 
+  // Debounced search filter
+  const applySearch = useCallback((query: string) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    setSearchTimeout(setTimeout(() => {
+      const lower = query.trim().toLowerCase();
+      if (!lower) {
+        // No search term - restore from cache (all products)
+        const cached = cachedProducts();
+        setProducts(cached ?? []);
+        return;
+      }
+      // Filter products by name match against cached products
+      const cached = cachedProducts() ?? [];
+      const filtered = cached.filter((p) => p.name.toLowerCase().includes(lower) && p.is_active);
+      setProducts(filtered);
+    }), 300);
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, searchQuery]);
+
+  // Apply search filter on query change
+  useEffect(() => {
+    applySearch(searchQuery);
+  }, [searchQuery, applySearch]);
 
   function logout() {
     clearAuth();
@@ -330,6 +357,19 @@ export default function Catalog() {
           <h2 className="text-sm font-black text-slate-300">
             Master Catalog <span className="text-slate-500 font-bold">({products.length})</span>
           </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold block">Search</span>
+            <input
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                applySearch(e.target.value);
+              }}
+              placeholder="Filter products..."
+              className="w-48 h-10 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none text-slate-100 text-base placeholder:text-slate-500"
+              autoComplete="off"
+            />
+          </div>
           <button
             onClick={() => (showForm ? close() : setShowForm(true))}
             className="h-11 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-black text-sm shadow-lg shadow-emerald-900/30 hover:brightness-110 active:scale-[0.97] transition"
