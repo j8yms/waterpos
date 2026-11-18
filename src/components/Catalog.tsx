@@ -59,10 +59,6 @@ export default function Catalog() {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const [armedId, setArmedId] = useState<string | null>(null);
-  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const armedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [editing, setEditing] = useState<Product | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>(EMPTY_EDIT);
   const [editBusy, setEditBusy] = useState(false);
@@ -77,8 +73,9 @@ export default function Catalog() {
       const res = await api<{ products: Product[] }>("/api/pos/products");
       setProducts(res.products);
       cacheProducts(res.products);
+      setErr(null);
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Failed to load catalog." });
+      setMsg({ kind: "err", text: e instanceof Error ? e.message : "Product load failed." });
     }
   }, []);
 
@@ -161,41 +158,9 @@ export default function Catalog() {
     setDraft(EMPTY);
   }
 
-  function disarm() {
-    setArmedId(null);
-    if (armedTimer.current) clearTimeout(armedTimer.current);
-  }
-
-  function arm(id: string) {
-    setArmedId(id);
-    if (armedTimer.current) clearTimeout(armedTimer.current);
-    armedTimer.current = setTimeout(disarm, 4000);
-  }
-
-  function onTilePointerDown(id: string) {
-    if (pressTimer.current) clearTimeout(pressTimer.current);
-    pressTimer.current = setTimeout(() => arm(id), 600);
-  }
-
-  function onTilePointerUp() {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-  }
-
-  useEffect(() => {
-    return () => {
-      if (pressTimer.current) clearTimeout(pressTimer.current);
-      if (armedTimer.current) clearTimeout(armedTimer.current);
-    };
-  }, []);
-
   async function deleteProduct(p: Product) {
-    if (armedId !== p.id) return;
     setBusy(true);
     setMsg(null);
-    disarm();
     try {
       await api(`/api/pos/products/${p.id}`, { method: "DELETE" });
       const remaining = products.filter((x) => x.id !== p.id);
@@ -276,12 +241,11 @@ export default function Catalog() {
     }
   }
 
-  const field = (label: string, key: keyof Draft, opts: { inputMode?: "decimal"; type?: string } = {}) => (
-    <label className="block">
+  const field = (label: string, key: keyof Draft, opts: { inputMode?: "decimal"; type?: string } = {}) => (    <label className="block">
       <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">{label}</span>
       <input
         value={draft[key]}
-        onChange={(e) => patch({ [key]: e.target.value })}
+        onChange={(e) => patch({ [key]: e.target.value }) }
         inputMode={opts.inputMode}
         type={opts.type ?? "text"}
         placeholder={key === "unit" ? "e.g. Btl, Pkt, Jug" : key === "stock" ? "e.g. 120" : "0"}
@@ -291,12 +255,11 @@ export default function Catalog() {
     </label>
   );
 
-  const editField = (label: string, key: keyof EditDraft, opts: { inputMode?: "decimal"; type?: string } = {}) => (
-    <label className="block">
+  const editField = (label: string, key: keyof EditDraft, opts: { inputMode?: "decimal"; type?: string } = {}) => (    <label className="block">
       <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">{label}</span>
       <input
         value={String(editDraft[key])}
-        onChange={(e) => patchEdit({ [key]: e.target.value })}
+        onChange={(e) => patchEdit({ [key]: e.target.value }) }
         inputMode={opts.inputMode}
         type={opts.type ?? "text"}
         autoComplete="off"
@@ -307,7 +270,7 @@ export default function Catalog() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <header className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-3 py-2">
+      <header className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-3 pt-2">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center text-sm font-black text-white shrink-0">
             P
@@ -326,18 +289,11 @@ export default function Catalog() {
             <Link href="/customers" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
               Customers
             </Link>
-            <Link href="/catalog" className="px-3 py-1.5 rounded-lg bg-sky-500/15 text-sky-300 font-bold">
-              Products
-            </Link>
-            <Link href="/reports" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
-              Reports
-            </Link>
             {canStaff && (
               <Link href="/staff" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
                 Staff
               </Link>
-            )}
-          </nav>
+            )}          </nav>
           {me && (
             <div className="flex items-center gap-2">
               <span className="hidden sm:block text-xs text-slate-400 truncate max-w-[90px]">{me.name}</span>
@@ -429,26 +385,16 @@ export default function Catalog() {
             <div
               key={p.id}
               style={{ backgroundColor: p.color }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                arm(p.id);
-              }}
-              onPointerDown={() => onTilePointerDown(p.id)}
-              onPointerUp={onTilePointerUp}
-              onPointerLeave={onTilePointerUp}
+              onClick={() => openEdit(p)}
               className={`relative rounded-2xl p-3 text-left text-white shadow-lg min-h-[104px] flex flex-col justify-between select-none ${p.is_active ? "" : "opacity-60"}`}
             >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openEdit(p);
-                }}
+              <span
                 className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 hover:bg-black/50 text-white text-xs font-black flex items-center justify-center"
                 title="Edit product"
                 aria-label="Edit product"
               >
-                E
-              </button>
+                ✎
+              </span>
               <div>
                 <div className="text-sm font-black leading-tight drop-shadow">{p.name}</div>
                 {!p.is_active && <div className="text-[10px] font-bold text-rose-200 drop-shadow">INACTIVE</div>}
@@ -462,35 +408,6 @@ export default function Catalog() {
                   cost {money(p.wholesale_cost)} / unit
                 </div>
               </div>
-
-              {armedId === p.id && (
-                <div className="absolute inset-0 rounded-2xl bg-slate-950/85 backdrop-blur-sm flex items-center justify-center gap-2 p-2">
-                  <button
-                    onClick={() => {
-                      disarm();
-                      openEdit(p);
-                    }}
-                    disabled={busy}
-                    className="h-11 px-3 flex-1 rounded-xl bg-sky-500 text-white font-black text-xs hover:bg-sky-400 active:scale-95 transition"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteProduct(p)}
-                    disabled={busy}
-                    className="h-11 px-3 flex-1 rounded-xl bg-rose-500 text-white font-black text-xs hover:bg-rose-400 active:scale-95 transition"
-                  >
-                    {busy ? "..." : "Delete"}
-                  </button>
-                  <button
-                    onClick={disarm}
-                    disabled={busy}
-                    className="h-11 px-3 rounded-xl bg-slate-700 text-white font-black text-xs hover:bg-slate-600 active:scale-95 transition"
-                  >
-                    Keep
-                  </button>
-                </div>
-              )}
             </div>
           ))}
           {products.length === 0 && (
@@ -528,7 +445,7 @@ export default function Catalog() {
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Category</span>
                 <select
                   value={editDraft.category}
-                  onChange={(e) => patchEdit({ category: e.target.value })}
+                  onChange={(e) => patchEdit({ category: e.target.value }) }
                   className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
                 >
                   {CATEGORIES.map((c) => (
@@ -653,4 +570,13 @@ export default function Catalog() {
       )}
     </main>
   );
+}
+
+function tryCache<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
 }
