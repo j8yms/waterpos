@@ -124,16 +124,16 @@ export function buildEscReceipt(data: {
 
   // ── Payment Status ─────────────────────────────────────
   const payLabel = data.payStatus === "PAID" ? "PAID" : "CREDIT UNPAID";
-  lines.push(...escLine("STATUS: " + payLabel, "left", 48).split("").map((c) => c.charCodeAt(0))));
+  lines.push(...escLine("STATUS: " + payLabel, "left", 48).split("").map((c) => c.charCodeAt(0)))
 
   // ── Paid Amount & Amount Due ───────────────────────────
-  lines.push(...escLine("PAID AMOUNT: " + data.subtotal.toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0))));
+  lines.push(...escLine("PAID AMOUNT: " + data.subtotal.toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0)))
 
   // ── Customer Outstanding Balance ───────────────────────
-  lines.push(...escLine("OUTSTANDING BALANCE: " + (data.outstandingBalance || 0).toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0))));
+  lines.push(...escLine("OUTSTANDING BALANCE: " + (data.outstandingBalance || 0).toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0)))
 
   // ── Payment Code footer ────────────────────────────────
-  lines.push(...escLine("PAYMENT CODE: " + (data.mpesaCode || "—"), "left", 48).split("").map((c) => c.charCodeAt(0))));
+  lines.push(...escLine("PAYMENT CODE: " + (data.mpesaCode || "—"), "left", 48).split("").map((c) => c.charCodeAt(0)))
 
   // ── Auto-cut command ───────────────────────────────────
   // In real WebUSB: printer.send(GS + "V" + String.fromCharCode(0x42) + String.fromCharCode(0x00));
