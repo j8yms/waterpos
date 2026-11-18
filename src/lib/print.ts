@@ -47,7 +47,7 @@ function escLine(text: string, align: "left" | "center" | "right", width: number
   return CMD_ALIGN_RIGHT + padded + CR;
 }
 
-// Build the full ESC/POS receipt data buffer
+// Build the full ESC/POS receipt data string
 export function buildReceipt(data: {
   businessName: string;
   logoBase64: string | null;
@@ -72,12 +72,8 @@ export function buildReceipt(data: {
   lines.push(CMD_INIT);
 
   // ── Header: High-contrast 576px bitmap ────────────────
-  // Note: Actual WebUSB send would be: printer.send(bitmapData)
-  // Here we add a placeholder for the logo
   lines.push(CMD_ALIGN_CENTER);
-
-  // ── Business Name (centered) ──────────────────────────
-  lines.push(`${data.businessName}`);
+  lines.push(data.businessName);
 
   // ── Address ───────────────────────────────────────────
   lines.push(data.address);
@@ -101,17 +97,13 @@ export function buildReceipt(data: {
 
   // ── Items: 48-column format ────────────────────────────
   for (const item of data.items) {
-    // Line 1: Product name (left-aligned, padded to 48)
     lines.push(`${item.name}`);
-
-    // Line 2: Qty x Ksh Price left-aligned, Subtotal right-aligned
     const qtyPrice = `${item.qty} x Ksh ${item.unitPrice.toFixed(2)}`;
     const subtotal = `${item.total.toFixed(2)}`;
     lines.push(`${qtyPrice} ${subtotal.padStart(6)}`);
   }
 
   // ── Totals & Balances ──────────────────────────────────
-  // Double-height + double-width bold TOTAL
   lines.push(CMD_DOUBLE_HEIGHT_ON);
   lines.push(CMD_DOUBLE_WIDTH_ON);
   lines.push(CMD_BOLD_ON);
@@ -138,25 +130,12 @@ export function buildReceipt(data: {
   // ── Auto-cut command ───────────────────────────────────
   lines.push(CMD_CUT);
 
-  // Return as string (will be sent to printer via WebUSB or serial)
   return lines.join(LF);
 }
 
 // ──────────────────────────────────────────────────────────
 // Print Function: WebUSB Bridge
 // ──────────────────────────────────────────────────────────
-/**
- * Send receipt to local thermal printer via WebUSB.
- * 
- * For WebUSB (browser):
- *   const printer = await navigator.usb.requestDevice({ filters: [{ vendorId: 0xXXXX }] });
- *   await printer.open();
- *   const receiptData = buildReceipt({...});
- *   const encoder = new TextEncoder();
- *   await printer.transferOut(1, encoder.encode(receiptData));
- * 
- * @param data Receipt data built from receiptFromOrder
- */
 export async function printReceiptEscPos(data: {
   businessName: string;
   logoBase64: string | null;
@@ -175,12 +154,6 @@ export async function printReceiptEscPos(data: {
   mpesaCode: string | null;
   outstandingBalance: number;
 }): Promise<void> {
-  // In a real WebUSB environment, this would send data directly to the printer:
-  // const printer = await navigator.usb.getDevice();
-  // await printer.open();
-  // await printer.transferOut(1, new TextEncoder().encode(buildReceipt(data)));
-
-  // For now, return the built receipt string for verification:
   const receipt = buildReceipt({
     ...data,
     logoBase64: data.logoBase64 || null,
@@ -192,33 +165,79 @@ export async function printReceiptEscPos(data: {
   // TODO: Uncomment for actual WebUSB send:
   // if (navigator.usb && navigator.usb.device) {
   //   await navigator.usb.device.open();
-  //   await printer.transferOut(1, new TextEncoder().encode(receipt));
-  // }
+  //   await navigator.usb.device.selectConfiguration(1);
+  //   await navigator.usb.device.claimInterface(0);
+  //   await navigator.usb.device.transferOut(1, new TextEncoder().encode(receipt));
+  }
 }
 
+/** Send receipt to the laptop's print server (cross-device printing).
+ * Set env var NEXT_PUBLIC_PRINT_SERVER_URL to the laptop's print server URL
+ * (e.g., "http://192.168.1.42:3001").
+ * Falls back to local print if not configured.
+ */
+export async function printToNetwork(data: {
+  businessName: string;
+  logoBase64: string | null;
+  address: string;
+  phone: string;
+  tillNumber: string;
+  cashier: string;
+  driver: string;
+  orderNo: string;
+  customerName: string;
+  customerAddress: string;
+  items: { name: string; qty: number; unitPrice: number; total: number }[];
+  subtotal: number;
+  payStatus: "PAID" | "PENDING";
+  paymentMethod: string;
+  mpesaCode: string | null;
+  outstandingBalance: number;
+}): Promise<void> {
+  const printServerUrl = process.env.NEXT_PUBLIC_PRINT_SERVER_URL;
+  if (!printServerUrl) {
+    console.log("🖨️ No print server configured, using local print");
+    return;
+  }
+
+  const receipt = buildReceipt({
+    ...data,
+    logoBase64: data.logoBase64 || null,
+  });
+
+  try {
+    const res = await fetch(`${printServerUrl}/print`, {
+      method: "POST",
+      headers: { "Content-Type": "application/text" },
+      body: receipt,
+    });
+    if (!res.ok) throw new Error(`Print server returned ${res.status}`);
+    console.log("✅ Network print sent to", printServerUrl);
+  } catch (err) {
+    console.warn("⚠️ Network print failed, falling back to local:", err);
+  }
+}
+
+// ── Helper: Convert order to receipt data ────────────────
 export function receiptFromOrder(
   order: any,
   opts: { operator: string; businessName?: string; logoUrl?: string; fontFamily?: string; customerName?: string }
 ): any {
-  // Build the ESC/POS data structure from the order
   const items = order.productLine ? order.productLine.split(" + ").map((s: string) => {
     const [qtyStr, name] = s.split(" x ");
     return {
       name: name.trim(),
       qty: parseInt(qtyStr) || 1,
-      unitPrice: 0, // would need to parse from order
+      unitPrice: 0,
       total: 0,
     };
   }) : [];
 
-  // Extract M-Pesa code from order notes or mpesa_code
   const mpesaCode = order.mpesa_code || order.notes?.match(/CODE[:\s]*(\S+)/)?.[1] || null;
 
   return {
     businessName: opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
-    logoBase64: opts.logoUrl ? // would decode actual base64 from URL
-      // In production: convert logo to 576px × 384px 1-bit bitmap
-      "/placeholder-logo" : null,
+    logoBase64: opts.logoUrl ? "/placeholder-logo" : null,
     address: "RHAPTA ROAD NJEMA COURT, 00100 NAIROBI",
     phone: "0769584784",
     tillNumber: "5251815",
@@ -232,6 +251,6 @@ export function receiptFromOrder(
     payStatus: order.pay_status === "PAID" ? "PAID" : "PENDING",
     paymentMethod: order.payment_method || "CASH",
     mpesaCode: mpesaCode,
-    outstandingBalance: 0, // would compute from ledger
+    outstandingBalance: 0,
   };
 }
