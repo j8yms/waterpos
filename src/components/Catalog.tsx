@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, cacheProducts, clearAuth, currentUser } from "@/lib/client";
+import { api, cacheProducts, cachedProducts, clearAuth, currentUser } from "@/lib/client";
 import { canManageStaff } from "@/lib/config";
 import { money } from "@/lib/pricing";
 import { BigButton } from "@/components/ui";
