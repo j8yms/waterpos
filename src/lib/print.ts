@@ -11,6 +11,7 @@ export interface ReceiptData {
   businessName: string;
   businessTagline?: string;
   logoUrl?: string;  // Optional logo image URL
+  shopLocation?: string;  // Optional shop/delivery location
   orderId: string;
   date: string;
   time: string;
@@ -28,6 +29,7 @@ export interface ReceiptData {
   mpesaCode?: string;
   operator: string;
   fontFamily?: string;  // Optional custom font family
+  customerName?: string;  // Optional explicit customer name override
 }
 
 const ESC = "\u001b";
@@ -138,9 +140,10 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
   <pre>${p("ORDER")} ${data.orderId}</pre>
   <pre>${p(data.date)} ${data.time}</pre>
   <pre class="sep">${rule}</pre>
-  <pre>${p("CUST: " + data.customer)}</pre>
+  <pre>${p("CUST: " + (data.customerName || data.customer))}</pre>
   ${data.phone ? `<pre>${p("TEL: " + data.phone)}</pre>` : ""}
   ${data.address ? `<pre>${p("ADD: " + data.address)}</pre>` : ""}
+  ${data.shopLocation ? `<pre>${p("LOC: " + data.shopLocation)}</pre>` : ""}
   <pre class="sep">${rule}</pre>
   ${linesHtml}
   <pre class="sep">${rule}</pre>
@@ -249,7 +252,7 @@ export async function printToNetwork(data: ReceiptData): Promise<void> {
 
 export function receiptFromOrder(
   order: any,
-  opts: { operator: string; businessName?: string }
+  opts: { operator: string; businessName?: string; logoUrl?: string; fontFamily?: string; customerName?: string; shopLocation?: string }
 ): ReceiptData {
   const lines: ReceiptLine[] = [
     {
@@ -263,10 +266,12 @@ export function receiptFromOrder(
   return {
     businessName: opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
     logoUrl: opts.logoUrl,
+    shopLocation: opts.shopLocation,
     orderId: order.id,
     date: order.date,
     time: order.time,
     customer: order.customer,
+    customerName: opts.customerName,
     phone: order.phone,
     address: order.address,
     driver: order.driver,
@@ -280,5 +285,6 @@ export function receiptFromOrder(
     mpesaCode: order.mpesa_code || undefined,
     operator: opts.operator,
     fontFamily: opts.fontFamily,
+    customerName: opts.customerName,
   };
 }

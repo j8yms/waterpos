@@ -13,7 +13,7 @@ import CommandMatrix from "./CommandMatrix";
 import PrintPrompt from "./PrintPrompt";
 import CheckoutModal from "./CheckoutModal";
 import { StatCard } from "@/components/ui";
-import { printToNetwork, receiptFromOrder } from "@/lib/print";
+import { receiptFromOrder } from "@/lib/print";
 
 const WALK_IN = "WALK-IN (No Rider)";
 
@@ -229,10 +229,17 @@ export default function SalesFloor() {
           /* superseded row already gone — ignore */
         }
       }
+      // Auto-print if print flag is set; otherwise just save the order.
       if (payment.print) {
-        setSavedOrder(res.order);
-      } else {
-        setSavedOrder(null);
+        // Print the receipt immediately via the network printer (or local fallback)
+        await printToNetwork(receiptFromOrder(res.order, { operator: me?.name || "POS" }));
+      }
+      if (editingId && editingId !== res.order.id) {
+        try {
+          await api(`/api/orders/${editingId}`, { method: "DELETE" });
+        } catch {
+          /* superseded row already gone — ignore */
+        }
       }
       setCart([]);
       setSelected(null);
@@ -250,11 +257,6 @@ export default function SalesFloor() {
     } finally {
       setCharging(false);
     }
-  }
-
-  async function doPrint() {
-    if (!savedOrder) return;
-    await printToNetwork(receiptFromOrder(savedOrder, { operator: me?.name || "POS" }));
   }
 
   function logout() {
@@ -477,13 +479,7 @@ export default function SalesFloor() {
         />
       )}
 
-      {savedOrder && (
-        <PrintPrompt
-          order={savedOrder}
-          onPrint={doPrint}
-          onClose={() => setSavedOrder(null)}
-        />
-      )}
+      
 
       {/* Today's Sales — full list at bottom */}
       <section className="p-3 lg:px-20">
