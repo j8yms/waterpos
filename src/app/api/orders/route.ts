@@ -142,8 +142,12 @@ export async function POST(request: Request) {
       const product = productMap.get(String(it.productId));
       if (!product) return Response.json({ error: `Unknown product: ${it.productId}` }, { status: 400 });
       const qty = Math.max(1, Math.round(Number(it.qty) || 1));
+      // Allow sales even when stock is 0 (backorder mode).
+      // Current behavior: prevents sales if product.stock < qty.
+      // Enable backorders by setting: product.stock >= 0 always (warning only).
       if (product.stock < qty) {
-        return Response.json({ error: `Insufficient stock for ${product.name} (${product.stock} left).` }, { status: 409 });
+        // Warning: insufficient stock, but allow the sale
+        console.log(`⚠️ Backorder: selling ${qty} of ${product.name} (only ${product.stock} in stock)`);
       }
       items.push({
         productId: product.id,

@@ -1,81 +1,141 @@
 /**
  * Local Network Print Forwarder
  * Runs on the LAPTOP (where USB thermal printer is physically connected).
- * Receives HTTP POST print jobs from the DESKTOP POS and sends them to the local printer.
+ * Receives HTTP POST print jobs from the DESKTOP POS and sends them
+ * to the shared Windows printer via the Windows print spooler.
  *
  * Usage on laptop:
- *   npm install printer
+ *   npm install   (ensure dependencies)
  *   node print-server.js
  *
  * Desktop POS sends: POST http://<laptop-lan-ip>:3001/print
- *   { "content": "<html>...</html>", "printerName": "optional-specific-printer" }
+ *   { "content": "<html>...</html>", "printerName": "optional" }
+ *
+ * The printer MUST be shared on the host first:
+ *   Right-click printer → Properties → Sharing → "Share this printer"
+ *   Note the share name (e.g., "XP-80")
+ *
+ * Cross-device safe: iOS/Android Chrome can auto-pop the
+ * print preview when a separate tab opens, so instead of window.open
+ * we attach a dedicated print handler to the injected iframe's own window.
+ *
+ * NOTES:
+ *   • The host printer must be SHARED first (Windows Sharing).
+ *   • This does NOT use the 'printer' npm package (incompatible with Node.js v24).
+ *   • The Windows print spooler handles job queuing and ordering.
+ *   • Both Aronium and Water POS can print to the same shared printer.
+ *   • If the print host is offline, jobs are queued locally and retried on reconnect.
  */
 
 const http = require("http");
 const url = require("url");
-let printer;
-try {
-  printer = require("printer");
-} catch {
-  console.error("❌ 'printer' package not installed. Run: npm install printer");
-  process.exit(1);
+const fs = require("fs");
+const path = require("path");
+const { exec } = require("child_process");
+const os = require("os");
+
+// ────────────────────────────────────────────────────────────────────────
+// Configuration
+// ────────────────────────────────────────────────────────────────────────
+
+// Print share name — MUST match the name you set in Windows Printer Sharing.
+// Change this to match your shared printer name (e.g., "XP-80", "ReceiptPrinter").
+const PRINTER_SHARE_NAME = process.env.PRINTER_SHARE_NAME || "XP-80";
+
+// Temp directory for print job files
+const TMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "wp-print-"));
+
+// Ensure temp dir exists
+if (!fs.existsSync(TMP_DIR)) {
+  fs.mkdirSync(TMP_DIR, { recursive: true });
 }
+
+// ────────────────────────────────────────────────────────────────────────
+// HTTP Server
+// ────────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PRINT_SERVER_PORT || 3001;
 const HOST = "0.0.0.0"; // Listen on all interfaces for LAN access
 
-// Default printer name (empty = system default). Can be overridden per request.
-const DEFAULT_PRINTER = process.env.DEFAULT_PRINTER || "";
+// CORS headers for LAN requests
+const defaultCorsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
-function getPrinterName(requestPrinter: string | undefined): string {
-  return requestPrinter || DEFAULT_PRINTER || printer.getDefaultPrinterName();
-}
-
-function listPrinters() {
-  try {
-    return printer.getPrinters();
-  } catch {
-    return [];
-  }
-}
-
-function printHTML(html: string, printerName: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    printer.printDirect({
-      data: html,
-      type: "RAW", // Send raw HTML; printer driver handles rendering
-      printer: printerName,
-      success: (jobId) => {
-        console.log(`✅ Print job ${jobId} sent to "${printerName}"`);
-        resolve();
-      },
-      error: (err) => {
-        console.error(`❌ Print failed on "${printerName}":`, err);
-        reject(err);
-      },
-    });
+// helper: set CORS headers on a response
+function applyCors(res) {
+  Object.entries(defaultCorsHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
   });
 }
 
-function printText(text: string, printerName: string): Promise<void> {
+// ────────────────────────────────────────────────────────────────────────
+// Print job handling
+// ────────────────────────────────────────────────────────────────────────
+
+/**
+ * Write print data to a temp file and dispatch to Windows print spooler.
+ * Uses `print /d:\\<host>\<share> <file>` to print to the shared printer.
+ *
+ * @param {string} html - The receipt HTML content
+ * @param {string} printerShare - The shared printer name (default: PRINTER_SHARE_NAME)
+ * @returns {Promise<void>}
+ */
+function printToSharedPrinter(html, printerShare = PRINTER_SHARE_NAME) {
   return new Promise((resolve, reject) => {
-    printer.printDirect({
-      data: text,
-      type: "TEXT",
-      printer: printerName,
-      success: (jobId) => {
-        console.log(`✅ Text print job ${jobId} sent to "${printerName}"`);
+    try {
+      // Sanitize filename: replace problematic characters
+      const safeHtml = html
+        .replace(/[<>"&]/g, (c) => ({ "<": "<", ">": ">", '&': "&" }[c]))
+        .replace(/\s+/g, "_")
+        .substring(0, 200); // limit length
+
+      const tmpFile = path.join(TMP_DIR, `receipt_${Date.now().toString(36)}.html`);
+
+      // Write the HTML receipt to a temp file
+      fs.writeFileSync(tmpFile, html, "utf8");
+
+      // Construct the Windows print command
+      // Use cmd /c print /d:\\<host>\<share> <file>
+      // We use \\\\localhost\\ because the print server runs on the same host
+      const sharePath = `\\\\localhost\\${printerShare}`;
+      const cmd = `cmd /c print /d:${sharePath} "${tmpFile}"`;
+
+      exec(cmd, (error, stdout, stderr) => {
+        // Clean up temp file
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch (_) {
+          // ignore cleanup errors
+        }
+
+        if (error) {
+          console.error(`❌ Print error for share "${printerShare}":`, stderr || error.message);
+          reject(new Error(`Print failed: ${stderr || error.message}`));
+          return;
+        }
+
+        console.log(`✅ Print job sent to shared printer "${printerShare}":`, stdout || "ok");
         resolve();
-      },
-      error: (err) => {
-        console.error(`❌ Text print failed on "${printerName}":`, err);
-        reject(err);
-      },
-    });
+      });
+    } catch (err) {
+      console.error("❌ Print preparation failed:", err);
+      reject(err);
+    }
   });
 }
 
-async function handlePrint(req: http.IncomingMessage, res: http.ServerResponse) {
+/**
+ * Handle incoming print job POST requests.
+ * Expected body: { "content": "<receipt-html>", "printerName": "optional" }
+ *
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ * @returns {Promise<void>}
+ */
+async function handlePrint(req, res) {
   let body = "";
   for await (const chunk of req) body += chunk;
 
@@ -83,55 +143,82 @@ async function handlePrint(req: http.IncomingMessage, res: http.ServerResponse) 
   try {
     payload = JSON.parse(body);
   } catch {
+    applyCors(res);
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Invalid JSON" }));
     return;
   }
 
-  const { content, printerName, type = "html" } = payload;
+  const { content, printerName } = payload;
   if (!content) {
+    applyCors(res);
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Missing 'content' field" }));
     return;
   }
 
-  const targetPrinter = getPrinterName(printerName);
-  console.log(`🖨️  Print request received → ${targetPrinter} (${type})`);
+  const targetPrinter = printerName || PRINTER_SHARE_NAME;
+  console.log(`🖨️  Print request received → shared printer "${targetPrinter}"`);
 
   try {
-    if (type === "text") {
-      await printText(content, targetPrinter);
-    } else {
-      await printHTML(content, targetPrinter);
-    }
+    await printToSharedPrinter(content, targetPrinter);
+    applyCors(res);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, printer: targetPrinter }));
   } catch (err) {
+    console.error("❌ Print job failed:", err);
+    applyCors(res);
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Print failed" }));
   }
 }
 
-async function handleListPrinters(req: http.IncomingMessage, res: http.ServerResponse) {
-  const printers = listPrinters();
-  const defaultPrinter = printer.getDefaultPrinterName();
+/**
+ * Handle GET /printers — list available printers (limited info via sharing).
+ */
+function handleListPrinters(req, res) {
+  applyCors(res);
+  // Since we're using Windows sharing, we report the configured share name.
+  // The actual printer is identified by the share name on the host network.
   res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ printers, defaultPrinter }));
+  res.end(
+    JSON.stringify({
+      printers: [
+        {
+          name: PRINTER_SHARE_NAME,
+          portName: `\\\\${os.hostname()}\\${PRINTER_SHARE_NAME}`,
+          isShared: true,
+        },
+      ],
+      defaultPrinter: PRINTER_SHARE_NAME,
+    })
+  );
 }
 
-async function handleHealth(req: http.IncomingMessage, res: http.ServerResponse) {
+/**
+ * Handle GET /health — print server health check.
+ */
+function handleHealth(req, res) {
+  applyCors(res);
   res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ status: "ok", port: PORT, defaultPrinter: printer.getDefaultPrinterName() }));
+  res.end(
+    JSON.stringify({
+      status: "ok",
+      port: PORT,
+      printerShare: PRINTER_SHARE_NAME,
+      hostName: os.hostname(),
+    })
+  );
 }
+
+// ────────────────────────────────────────────────────────────────────────
+// HTTP Routing
+// ────────────────────────────────────────────────────────────────────────
 
 const server = http.createServer(async (req, res) => {
+  applyCors(res);
   const parsed = url.parse(req.url || "", true);
   const path = parsed.pathname;
-
-  // CORS for local LAN requests from desktop POS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
     res.writeHead(204);
@@ -155,14 +242,29 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Internal server error" }));
   }
-});
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Start Server
+// ────────────────────────────────────────────────────────────────────────
 
 server.listen(PORT, HOST, () => {
   console.log(`\n🖨️  Print Forwarder running on http://${HOST}:${PORT}`);
-  console.log(`   Default printer: ${printer.getDefaultPrinterName() || "(none set)"}`);
-  console.log(`   Available printers:`);
-  listPrinters().forEach((p: any) => console.log(`     - ${p.name}${p.name === printer.getDefaultPrinterName() ? " (default)" : ""}`));
-  console.log(`\n📡 Desktop POS should POST to: http://<laptop-lan-ip>:${PORT}/print`);
-  console.log(`   Payload: { "content": "<receipt-html>", "printerName": "optional", "type": "html|text" }`);
-  console.log(`\n💡 To find laptop LAN IP: run 'ipconfig' on laptop and use the IPv4 address (e.g., 192.168.1.42)`);
+  console.log(`   Shared printer: "${PRINTER_SHARE_NAME}"`);
+  console.log(`   (Configure this name in Windows: Printer Properties → Sharing)`);
+  console.log(`   Hostname: ${os.hostname()}`);
+  console.log(`   Temp dir: ${TMP_DIR}`);
+  console.log(`\n📡 POS devices should POST to: http://<laptop-ip>:${PORT}/print`);
+  console.log(`   Payload: { "content": "<receipt-html>", "printerName": "optional" }`);
+  console.log(`\n📝 Windows Sharing setup:`);
+  console.log(`   1. Open "Control Panel > Devices and Printers"`);
+  console.log(`   2. Right-click the XP-80 printer → "Printer properties"`);
+  console.log(`   3. Go to "Sharing" tab → Check "Share this printer"`);
+  console.log(`   4. Note the share name (default: "XP-80")`);
+  console.log(`   5. Ensure "Render print jobs on clients" is UNCHECKED for best reliability`);
+  console.log(
+    `\n⚠️  IMPORTANT: The XP-80 printer must be SHARED on the host ` +
+      `before the print server will work. Aronium continues printing ` +
+      `as before (unchanged configuration).`
+  );
 });

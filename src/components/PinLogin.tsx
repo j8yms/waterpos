@@ -99,9 +99,13 @@ export default function PinLogin() {
   // Keyboard input
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (/^[0-9]$/.test(e.key)) press(e.key);
+      // Accept digits from main keyboard and numpad (0-9)
+      const key = e.key;
+      if (/^[0-9]$/.test(key)) press(key);
       else if (e.key === "Backspace") setEntryValue(entryRef.current.slice(0, -1));
       else if (e.key === "Enter" && entryRef.current.length === PIN_LENGTH) complete(entryRef.current);
+      // Also allow numpad keys (Numpad0-Numpad9)
+      else if (/^Numpad[0-9]$/.test(key)) press(e.key.replace("Numpad", ""));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
