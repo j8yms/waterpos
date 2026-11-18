@@ -29,42 +29,6 @@ const CMD_PRINT_MODE_2 = ESC + "!" + String.fromCharCode(0x20); // Print mode 2 
 const CMD_CUT = GS + "V" + String.fromCharCode(0x42) + String.fromCharCode(0x00); // Auto cut 66mm
 
 // ──────────────────────────────────────────────────────────
-// Bitmap Generator: 576px wide × 384px high (1-bit, no dithering)
-// 80mm thermal printer at 12dpi ≈ 48 columns per line
-// 576px / 12dpi = 48 characters wide
-// ──────────────────────────────────────────────────────────
-function generateLogoBitmap(logoBase64: string | null): Uint8Array | null {
-  if (!logoBase64) return null;
-
-  try {
-    // Decode base64 image
-    const binary = atob(logoBase64);
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-
-    // For a 576px × 384px 1-bit bitmap:
-    // - 576 pixels wide = 48 bytes per row (8 pixels per byte)
-    // - 384 rows high = 384 rows
-    // - Total: 48 × 384 = 18,432 bytes
-    // We'll create a placeholder high-contrast bitmap.
-    // In production, use sharp/jimp to convert the actual logo.
-
-    // Placeholder: solid black rectangle (576 × 384)
-    const bitmap = new Uint8Array(48 * 384);
-    // Fill first 50 rows with black, rest with white for demo
-    for (let row = 0; row < 50; row++) {
-      for (let col = 0; col < 48; col++) {
-        bitmap[row * 48 + col] = 0xFF; // black column
-      }
-    }
-    return bitmap;
-  } catch {
-    return null;
-  }
-}
-
-// ──────────────────────────────────────────────────────────
 // ESC/POS Receipt Builder (48-column layout)
 // ──────────────────────────────────────────────────────────
 function escPad(s: string, width: number): string {
@@ -103,16 +67,15 @@ export function buildEscReceipt(data: {
   mpesaCode: string | null;
   outstandingBalance: number;
 }): Uint8Array {
-  const lines: Uint8Array[] = [];
+  const lines: number[] = [];
 
   // ── Initialise printer ─────────────────────────────────
-  lines.push(...CMD_INIT.split("").map((c) => c.charCodeAt(0))); // simplified: actual would be buffer
+  lines.push(...CMD_INIT.split("").map((c) => c.charCodeAt(0)));
 
   // ── Header: High-contrast 576px bitmap ────────────────
   // Note: Actual WebUSB send would be: printer.send(bitmapData)
   // Here we add a placeholder ESC sequence for logo
   lines.push(...CMD_ALIGN_CENTER.split("").map((c) => c.charCodeAt(0)));
-  // In real implementation: printer.send(generateLogoBitmap(data.logoBase64)!)
 
   // ── Business Name (centered) ──────────────────────────
   lines.push(...escLine(data.businessName, "center", 48).split("").map((c) => c.charCodeAt(0)));
@@ -130,7 +93,6 @@ export function buildEscReceipt(data: {
 
   // ── Metadata: Receipt No, Date/Time, Cashier, Driver ────
   lines.push(...escLine("RECEIPT NO: " + data.orderNo, "left", 48).split("").map((c) => c.charCodeAt(0)));
-  const dateTime = data.orderNo; // simplified - would use actual date
   lines.push(...escLine("DATE/TIME: " + new Date().toLocaleString(), "left", 48).split("").map((c) => c.charCodeAt(0)));
   lines.push(...escLine("CASHIER/USER: " + data.cashier, "left", 48).split("").map((c) => c.charCodeAt(0)));
   lines.push(...escLine("DRIVER: " + data.driver, "left", 48).split("").map((c) => c.charCodeAt(0)));
@@ -146,8 +108,7 @@ export function buildEscReceipt(data: {
     // Line 2: Qty x Ksh Price left-aligned, Subtotal right-aligned
     const qtyPrice = `${item.qty} x Ksh ${item.unitPrice.toFixed(2)}`;
     const subtotal = item.total.toFixed(2);
-    const combined = qtyPrice + "".padEnd(1) + subtotal.padStart(6);
-    lines.push(...escLine(combined, "right", 48).split("").map((c) => c.charCodeAt(0)));
+    lines.push(...escLine(qtyPrice + " " + subtotal.padStart(6), "right", 48).split("").map((c) => c.charCodeAt(0)));
   }
 
   // ── Totals & Balances ──────────────────────────────────
@@ -166,8 +127,7 @@ export function buildEscReceipt(data: {
   lines.push(...escLine("STATUS: " + payLabel, "left", 48).split("").map((c) => c.charCodeAt(0))));
 
   // ── Paid Amount & Amount Due ───────────────────────────
-  lines.push(...escLine("PAID AMOUNT: " + data.subtotal.toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0)));
-  lines.push(...escLine("AMOUNT DUE: " + (data.outstandingBalance || 0).toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0))));
+  lines.push(...escLine("PAID AMOUNT: " + data.subtotal.toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0))));
 
   // ── Customer Outstanding Balance ───────────────────────
   lines.push(...escLine("OUTSTANDING BALANCE: " + (data.outstandingBalance || 0).toFixed(2) + " KSH", "left", 48).split("").map((c) => c.charCodeAt(0))));
@@ -182,11 +142,7 @@ export function buildEscReceipt(data: {
   lines.push(...[cutCmd]);
 
   // ── Return combined Uint8Array ─────────────────────────
-  const result: number[] = [];
-  for (const line of lines) {
-    for (const code of line) result.push(code);
-  }
-  return new Uint8Array(result);
+  return new Uint8Array(lines);
 }
 
 // ──────────────────────────────────────────────────────────
@@ -245,7 +201,7 @@ export async function printReceiptEscPos(data: {
   //   await navigator.usb.device.selectConfiguration(1);
   //   await navigator.usb.device.claimInterface(0);
   //   await navigator.usb.device.transferOut(1, data);
-  // }
+  }
 }
 
 export function receiptFromOrder(
