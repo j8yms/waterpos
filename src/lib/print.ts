@@ -30,6 +30,7 @@ export interface ReceiptData {
   operator: string;
   fontFamily?: string;  // Optional custom font family
   customerName?: string;  // Optional explicit customer name override
+  printerWidth?: "58mm" | "80mm";  // Thermal printer width configuration
 }
 
 const ESC = "\u001b";
@@ -46,7 +47,7 @@ function center(value: string, width: number): string {
 }
 
 export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
-  const L = widthChars;
+  const L = data.printerWidth === "58mm" ? 44 : 60;
   const c = (s: string) => center(s, L);
   const p = (s: string) => pad(s, L);
   const rule = "-".repeat(L);
@@ -54,12 +55,7 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
   // Font family: use custom if provided, otherwise default monospace for thermal printers
   const fontFamily = data.fontFamily || "'Courier New', 'Lucida Console', monospace";
 
-  // Width mapping: at 12px monospace, each character ≈ 0.43mm
-  // 36 chars ≈ 15.5mm (too narrow for 58mm receipt)
-  // 44 chars ≈ 18.9mm (better for 58mm with margins)
-  // 52 chars ≈ 23.5mm (good for 58mm with wider layout)
-  // 60 chars ≈ 25.8mm (for 80mm receipt)
-  // Use 44 for 58mm, 60 for 80mm - user can adjust via env var
+  // ... rest of function uses `L` (which is widthChars parameter, default 36)
 
   // Logo HTML if logoUrl is provided
   const logoHtml = data.logoUrl
@@ -115,8 +111,6 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
     font-family: ${fontFamily};
   }
   .receipt {
-    width: 80mm;
-    margin: 0 auto;
     padding: 6px 4px;
     color: #000;
     font-size: 12px;
@@ -170,7 +164,7 @@ export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
  * a dedicated print handler to the injected iframe's own window.
  */
 export function printReceipt(data: ReceiptData): void {
-  const html = buildReceiptHtml(data);
+  const html = buildReceiptHtml(data, data.printerWidth ? undefined : 36);
 
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
