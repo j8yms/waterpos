@@ -100,6 +100,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    // ... existing POST logic
     const driver = String(body.driver ?? "").trim();
     const glovo = Boolean(body.glovo);
     const paymentMethodRaw = String(body.paymentMethod ?? "").trim().toUpperCase();
@@ -218,6 +219,35 @@ export async function POST(request: Request) {
     invalidateCache("tab:PRODUCTS");
 
     return Response.json({ ok: true, order });
+  } catch (err) {
+    return Response.json({ error: errMessage(err) }, { status: 500 });
+  }
+}
+
+/** PATCH /api/orders – edit an existing order (change pay_status, notes, etc.) */
+export async function PATCH(request: Request) {
+  const user = requireRole(request, "management");
+  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+
+  try {
+    const body = await request.json();
+    const { orderId, pay_status, notes } = body;
+    if (!orderId) return Response.json({ error: "Order ID required." }, { status: 400 });
+
+    const ledger = await readAllLedgerRows();
+    const orderRow = ledger.find((r) => r.order.id === orderId);
+    if (!orderRow) return Response.json({ error: "Order not found." }, { status: 404 });
+
+    const update: Partial<DispatchOrder> = {};
+    if (pay_status) update.pay_status = pay_status;
+    if (notes !== undefined) update.notes = notes;
+
+    const tab = orderRow.tab;
+    await updateRow(tab, orderRow.order._row, update as Record<string, any>);
+    invalidateCache(`tab:${tab}`);
+    invalidateCache("tab:ORDERS");
+
+    return Response.json({ ok: true, order: orderRow.order });
   } catch (err) {
     return Response.json({ error: errMessage(err) }, { status: 500 });
   }
