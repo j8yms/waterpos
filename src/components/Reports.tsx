@@ -144,7 +144,7 @@ export default function Reports() {
       });
       setRepayMsg({
         kind: "ok",
-        text: `${money(res.applied)} recorded for ${account.customer}${
+        text: `${money(res.applied ?? 0)} recorded for ${account.customer}${
           res.settledRows.length ? ` — ${res.settledRows.length} order(s) settled.` : "."
         }`,
       });
@@ -193,6 +193,11 @@ export default function Reports() {
             {canStaff && (
               <Link href="/staff" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
                 Staff
+              </Link>
+            )}
+            {canStaff && (
+              <Link href="/receipts" className="px-3 py-1.5 rounded-lg hover:bg-slate-800 font-bold text-slate-300">
+                Receipts
               </Link>
             )}
           </nav>
@@ -247,15 +252,15 @@ export default function Reports() {
         )}
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <StatCard label="Sales (selected day)" value={money(dayTotal)} accent="text-emerald-400" />
-          <StatCard label="Monthly Gross Sales" value={money(monthGross)} accent="text-sky-400" />
-          <StatCard label="Monthly Net Profit" value={money(monthNet)} accent="text-amber-400" />
+          <StatCard label="Sales (selected day)" value={money(dayTotal ?? 0)} accent="text-emerald-400" />
+          <StatCard label="Monthly Gross Sales" value={money(monthGross ?? 0)} accent="text-sky-400" />
+          <StatCard label="Monthly Net Profit" value={money(monthNet ?? 0)} accent="text-amber-400" />
         </section>
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <StatCard label="Monthly Cost Basis" value={money(monthCost)} accent="text-rose-400" />
+          <StatCard label="Monthly Cost Basis" value={money(monthCost ?? 0)} accent="text-rose-400" />
           <StatCard label="Monthly Dispatch Count" value={String(monthOrders.length)} accent="text-slate-100" />
-          <StatCard label="Madeni Outstanding" value={money(creditTotal)} accent="text-amber-300" />
+          <StatCard label="Madeni Outstanding" value={money(creditTotal ?? 0)} accent="text-amber-300" />
         </section>
 
         {repayMsg && (
@@ -276,7 +281,7 @@ export default function Reports() {
             <span>Debts Ledger &amp; Repayment Node</span>
             <span className="text-amber-200/80 normal-case tracking-normal text-[11px]">
               {debts.reduce((s, d) => s + d.outstanding, 0) > 0
-                ? `Total open ${money(debts.reduce((s, d) => s + d.outstanding, 0))}`
+                ? `Total open ${money(debts.reduce((s, d) => s + (d.outstanding ?? 0), 0))}`
                 : "All caught up"}
             </span>
           </div>
@@ -297,7 +302,7 @@ export default function Reports() {
                     </div>
                   </div>
                   <div className="text-right shrink-0 font-black text-amber-300">
-                    {money(d.outstanding)}
+                    {money(d.outstanding ?? 0)}
                   </div>
                   <button
                     onClick={() => {
@@ -339,7 +344,7 @@ export default function Reports() {
                     >
                       {d.rows.map((r) => (
                         <option key={r.id} value={r.id}>
-                          {r.id} — {money(r.balance)}
+                          {r.id} — {money(r.balance ?? 0)}
                         </option>
                       ))}
                     </select>
@@ -376,7 +381,7 @@ export default function Reports() {
                         <span className="flex-1 truncate text-slate-300">
                           {r.payment_method || "—"} · {r.driver}
                         </span>
-                        <span className="shrink-0 text-slate-400 font-bold">{money(r.balance)}</span>
+                        <span className="shrink-0 text-slate-400 font-bold">{money(r.balance ?? 0)}</span>
                       </div>
                     ))}
                   </div>
@@ -413,7 +418,7 @@ export default function Reports() {
                   <tr key={r.driver} className="hover:bg-slate-900">
                     <td className="px-3 py-2 font-bold text-slate-100">{r.driver}</td>
                     <td className="px-2 py-2 text-right text-emerald-400 font-black">{r.tripsCompleted}</td>
-                    <td className="px-2 py-2 text-right text-slate-200">{money(r.grossCashCollected)}</td>
+                    <td className="px-2 py-2 text-right text-slate-200">{money(r.grossCashCollected ?? 0)}</td>
                     <td className="px-3 py-2 text-right text-rose-400 font-black">{r.activePendingDeliveries}</td>
                   </tr>
                 ))}
@@ -430,17 +435,17 @@ export default function Reports() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3">
             <StatCard
               label="Gross Channel Revenue"
-              value={glovo ? money(glovo.grossRevenue) : "—"}
+              value={glovo ? money(glovo.grossRevenue ?? 0) : "—"}
               accent="text-purple-300"
             />
             <StatCard
               label="Commission Overhead (20%)"
-              value={glovo ? money(glovo.commissionOverhead) : "—"}
+              value={glovo ? money(glovo.commissionOverhead ?? 0) : "—"}
               accent="text-rose-400"
             />
             <StatCard
               label="Net Channel Yield"
-              value={glovo ? money(glovo.netYield) : "—"}
+              value={glovo ? money(glovo.netYield ?? 0) : "—"}
               accent="text-emerald-400"
             />
           </div>
@@ -479,7 +484,7 @@ export default function Reports() {
                     {t.qty}
                   </div>
                   <div className="w-24 shrink-0 text-right text-[11px] text-slate-500 font-bold">
-                    {money(t.revenue)}
+                    {money(t.revenue ?? 0)}
                   </div>
                 </div>
               );
@@ -522,12 +527,12 @@ export default function Reports() {
                     <td className="px-2 py-2 text-right font-bold text-slate-200">{r.dispatches}</td>
                     <td className="px-2 py-2 text-right text-emerald-400 font-black">{r.completed}</td>
                     <td className="px-2 py-2 text-right text-rose-400 font-black">{r.pending}</td>
-                    <td className="px-2 py-2 text-right text-slate-200">{money(r.cashCollected)}</td>
-                    <td className="px-2 py-2 text-right text-slate-200">{money(r.mpesaCollected)}</td>
+                    <td className="px-2 py-2 text-right text-slate-200">{money(r.cashCollected ?? 0)}</td>
+                    <td className="px-2 py-2 text-right text-slate-200">{money(r.mpesaCollected ?? 0)}</td>
                     <td className="px-2 py-2 text-right text-amber-300">{r.glovoOrders}</td>
                     <td className="px-2 py-2 text-right text-slate-300">{r.routeStops}</td>
                     <td className="px-2 py-2 text-right text-slate-300">{r.itemsDelivered}</td>
-                    <td className="px-3 py-2 text-right text-slate-200">{money(r.avgOrderValue)}</td>
+                    <td className="px-3 py-2 text-right text-slate-200">{money(r.avgOrderValue ?? 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -538,7 +543,7 @@ export default function Reports() {
         {/* ── Credit Accounts (Madeni) ─────────────────────────────────────── */}
         <section className="rounded-2xl border border-amber-500/30 bg-slate-950 overflow-hidden">
           <div className="px-3 py-2.5 border-b border-amber-500/20 text-xs uppercase tracking-wider text-amber-300 font-black">
-            Credit Accounts · Madeni · Outstanding {money(creditTotal)} ({credit.length} accounts)
+            Credit Accounts · Madeni · Outstanding {money(creditTotal ?? 0)} ({credit.length} accounts)
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -567,7 +572,7 @@ export default function Reports() {
                     </td>
                     <td className="px-2 py-2 text-slate-400">{c.phone || "—"}</td>
                     <td className="px-2 py-2 text-right text-slate-300">{c.orders}</td>
-                    <td className="px-2 py-2 text-right font-black text-amber-300">{money(c.outstanding)}</td>
+                    <td className="px-2 py-2 text-right font-black text-amber-300">{money(c.outstanding ?? 0)}</td>
                     <td className="px-3 py-2 text-right text-slate-400">{c.lastPendingDate || "—"}</td>
                   </tr>
                 ))}
@@ -596,8 +601,8 @@ export default function Reports() {
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-sm font-black text-emerald-400">{money(o.total)}</div>
-                  <div className="text-[11px] text-slate-500 font-bold">+{money(o.profit)} profit</div>
+                  <div className="text-sm font-black text-emerald-400">{money(o.total ?? 0)}</div>
+                  <div className="text-[11px] text-slate-500 font-bold">+{money(o.profit ?? 0)} profit</div>
                 </div>
               </div>
             ))}

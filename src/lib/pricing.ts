@@ -26,7 +26,8 @@ export function computeTicket(items: TicketItem[], glovo: boolean): TicketTotals
 }
 
 export function money(n: number): string {
-  return `Ksh ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const val = (n === null || n === undefined || !Number.isFinite(n)) ? 0 : n;
+  return `Ksh ${val.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** VAT-inclusive price split: total = net + 16% VAT (Kenya). */
