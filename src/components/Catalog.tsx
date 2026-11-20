@@ -414,7 +414,9 @@ export default function Catalog() {
                 {!p.is_active && <div className="text-[10px] font-bold text-rose-200 drop-shadow">INACTIVE</div>}
               </div>
               <div>
-                <div className="text-xl font-black drop-shadow">{money(p.selling_price)}</div>
+                <div className="text-xl font-black drop-shadow">
+                {Number.isFinite(p.selling_price) ? money(p.selling_price) : "Invalid price"}
+              </div>
                 <div className="text-[11px] font-black mt-0.5 text-white/80 drop-shadow">
                   {p.stock} {p.unit} in stock
                 </div>
@@ -512,6 +514,9 @@ export default function Catalog() {
                   onChange={(e) => patchEdit({ selling_price: e.target.value })}
                   className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
                 />
+                {!Number.isFinite(Number(editDraft.selling_price)) && editDraft.selling_price !== "" && (
+                  <span className="text-xs text-rose-400 font-bold mt-1 block">Invalid price — must be a number</span>
+                )}
               </label>
               <label className="block">
                 <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Wholesale / Cost (Ksh)</span>
@@ -538,6 +543,15 @@ export default function Catalog() {
                   value={editDraft.min_stock}
                   onChange={(e) => patchEdit({ min_stock: e.target.value })}
                   className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-base"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Color</span>
+                <input
+                  type="color"
+                  value={editDraft.color || "#475569"}
+                  onChange={(e) => patchEdit({ color: e.target.value })}
+                  className="w-full h-11 px-3 rounded-xl bg-slate-900 border border-slate-700"
                 />
               </label>
               <label className="block sm:col-span-2">
