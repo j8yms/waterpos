@@ -50,6 +50,7 @@ export default function Reports() {
   const [glovo, setGlovo] = useState<GlovoMetrics | null>(null);
   const [topSelling, setTopSelling] = useState<TopSellingItem[]>([]);
   const [repaying, setRepaying] = useState<string | null>(null);
+  const [repayingRowId, setRepayingRowId] = useState<string>("");
   const [repayAmount, setRepayAmount] = useState("");
   const [repayMethod, setRepayMethod] = useState<"CASH" | "MPESA">("CASH");
   const [repayBusy, setRepayBusy] = useState(false);
@@ -111,12 +112,18 @@ export default function Reports() {
     router.replace("/");
   }
 
-  async function recordRepayment(account: DebtAccount) {
+  async function recordRepayment(account: DebtAccount, selectedRowId?: string) {
     const amount = parseFloat(repayAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setRepayMsg({ kind: "err", text: "Enter a positive repayment amount." });
       return;
     }
+    const row = account.rows.find((r) => r.id === selectedRowId) ?? account.rows[0];
+    if (!row) {
+      setRepayMsg({ kind: "err", text: "Select a debt to repay." });
+      return;
+    }
+    const source = row.source ?? (String(row.id).startsWith("od") ? "opening" : "order");
     setRepayBusy(true);
     setRepayMsg(null);
     try {
@@ -127,7 +134,13 @@ export default function Reports() {
         settledRows: string[];
       }>("/api/repayments", {
         method: "POST",
-        body: { action: "logRepayment", customer: account.customer, amount, method: repayMethod },
+        body: {
+          action: "logRepayment",
+          customer: account.customer,
+          amount,
+          method: repayMethod,
+          allocations: [{ source, id: row.id, amount }],
+        },
       });
       setRepayMsg({
         kind: "ok",
@@ -292,6 +305,7 @@ export default function Reports() {
                         setRepaying(null);
                       } else {
                         setRepaying(d.customer);
+                        setRepayingRowId(d.rows[0]?.id ?? "");
                         setRepayAmount("");
                         setRepayMsg(null);
                       }
@@ -318,6 +332,17 @@ export default function Reports() {
                         </button>
                       ))}
                     </div>
+                    <select
+                      value={repayingRowId || d.rows[0]?.id || ""}
+                      onChange={(e) => setRepayingRowId(e.target.value)}
+                      className="h-9 px-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 text-xs"
+                    >
+                      {d.rows.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.id} — {money(r.balance)}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -328,7 +353,7 @@ export default function Reports() {
                       className="h-9 flex-1 min-w-[120px] px-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-sky-500 outline-none text-slate-100 text-sm"
                     />
                     <button
-                      onClick={() => recordRepayment(d)}
+                      onClick={() => recordRepayment(d, repayingRowId || d.rows[0]?.id)}
                       disabled={repayBusy}
                       className="px-4 h-9 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition disabled:opacity-50"
                     >

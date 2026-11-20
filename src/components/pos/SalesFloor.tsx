@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cacheProducts, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
+import { useReceiptSettings } from "@/lib/receiptSettings";
 import type { CartItem, DashboardSummary, DispatchOrder, Product } from "@/lib/types";
 import { money, nairobiDate, computeTicket, parseProductLine } from "@/lib/pricing";
 import { canManageStaff } from "@/lib/config";
@@ -20,6 +21,7 @@ const WALK_IN = "WALK-IN (No Rider)";
 export default function SalesFloor() {
   const router = useRouter();
   const me = currentUser();
+  const receiptSettings = useReceiptSettings();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -254,7 +256,7 @@ export default function SalesFloor() {
 
   async function doPrint() {
     if (!savedOrder) return;
-    await printToNetwork(receiptFromOrder(savedOrder, { operator: me?.name || "POS" }));
+    await printToNetwork(receiptFromOrder(savedOrder, { operator: me?.name || "POS", settings: receiptSettings }));
   }
 
   function logout() {
@@ -538,7 +540,7 @@ export default function SalesFloor() {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
-                        await printToNetwork(receiptFromOrder(o, { operator: me?.name || "POS" }));
+                        await printToNetwork(receiptFromOrder(o, { operator: me?.name || "POS", settings: receiptSettings }));
                       }}
                       className="shrink-0 w-9 h-9 rounded-lg bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white text-sm transition active:scale-95"
                       title="Reprint receipt"

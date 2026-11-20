@@ -203,6 +203,20 @@ export function normalizeHeader(raw: string): string {
   return raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
 }
 
+export function resolveUpdateColumns(headers: string[], changes: Record<string, any>): { col: number; value: any }[] {
+  const result: { col: number; value: any }[] = [];
+  for (const h of Object.keys(changes)) {
+    const nh = normalizeHeader(h);
+    const col = headers.indexOf(nh) + 1;
+    if (col > 0 && changes[h] !== undefined) {
+      result.push({ col, value: changes[h] });
+    } else if (changes[h] !== undefined) {
+      console.warn(`resolveUpdateColumns: field ${h} not found in live header`);
+    }
+  }
+  return result;
+}
+
 /** Invalidate cached reads for a tab (call after writes). */
 export { invalidateCache };
 
@@ -271,8 +285,20 @@ export async function readTab(tabName: string): Promise<TabRead> {
 export async function appendRow(tabName: string, record: Record<string, any>): Promise<void> {
   const sheets = await getSheets();
   const spreadsheetId = getSpreadsheetId();
-  const headers = TABS[tabName] ?? [];
+  const liveRead = await readTab(tabName);
+  let headers = liveRead.headers;
+  if (!headers.length) {
+    headers = (TABS[tabName] ?? []).map((h: string) => normalizeHeader(h));
+    if (headers.length) {
+      console.warn(`appendRow: no live header for ${tabName}; using TABS fallback (new tab?)`);
+    }
+  }
   if (!headers.length) throw new Error(`No header definition for tab ${tabName}`);
+
+  const configHeaders = (TABS[tabName] ?? []).map((h: string) => normalizeHeader(h));
+  if (configHeaders.length && JSON.stringify(configHeaders) !== JSON.stringify(headers)) {
+    console.warn(`appendRow: live header for ${tabName} differs from TABS config`);
+  }
 
   const values = headers.map((h) => record[h] ?? "");
   await sheets.spreadsheets.values.append({
@@ -281,7 +307,19 @@ export async function appendRow(tabName: string, record: Record<string, any>): P
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [values] },
   });
-  invalidateCache(`tab:${tabName}`);
+  // Update the cached TabRead directly.
+  const cached = getCached<TabRead>(`tab:${tabName}`);
+  if (cached) {
+    const record: Record<string, any> = {};
+    headers.forEach((h, i) => {
+      record[h] = values[i] ?? "";
+    });
+    cached.rows.push(record);
+    cached.rowNumbers.push(cached.rowNumbers.length > 0 ? cached.rowNumbers[cached.rowNumbers.length - 1] + 1 : 2);
+    setCache(`tab:${tabName}`, cached);
+  } else {
+    invalidateCache(`tab:${tabName}`);
+  }
 }
 
 /**
@@ -337,19 +375,22 @@ export async function updateRow(
 ): Promise<void> {
   const sheets = await getSheets();
   const spreadsheetId = getSpreadsheetId();
-  const headers = TABS[tabName] ?? [];
-  if (!headers.length) throw new Error(`No header definition for tab ${tabName}`);
-
-  const data: { range: string; values: any[][] }[] = [];
-  for (const h of headers) {
-    if (h in changes && changes[h] !== undefined) {
-      const col = headers.indexOf(h) + 1;
-      data.push({
-        range: `${tabName}!${columnName(col)}${rowNumber}:${columnName(col)}${rowNumber}`,
-        values: [[changes[h]]],
-      });
-    }
+  const liveRead = await readTab(tabName);
+  const headers = liveRead.headers.length ? liveRead.headers : null;
+  if (!headers || !headers.length) {
+    throw new Error(`No live header row found for tab ${tabName}; refusing to write by position.`);
   }
+
+  const configHeaders = (TABS[tabName] ?? []).map((h: string) => normalizeHeader(h));
+  if (configHeaders.length && JSON.stringify(configHeaders) !== JSON.stringify(headers)) {
+    console.warn(`updateRow: live header for ${tabName} differs from TABS config`);
+  }
+
+  const resolved = resolveUpdateColumns(headers, changes);
+  const data: { range: string; values: any[][] }[] = resolved.map(({ col, value }) => ({
+    range: `${tabName}!${columnName(col)}${rowNumber}:${columnName(col)}${rowNumber}`,
+    values: [[value]],
+  }));
   if (!data.length) return;
 
   await sheets.spreadsheets.values.batchUpdate({
@@ -359,7 +400,24 @@ export async function updateRow(
       data,
     },
   });
-  invalidateCache(`tab:${tabName}`);
+  // Update the cached TabRead directly so the next readTab returns the new value
+  // immediately, bypassing Google Sheets API read latency.
+  const cached = getCached<TabRead>(`tab:${tabName}`);
+  if (cached) {
+    const idx = cached.rowNumbers.indexOf(rowNumber);
+    if (idx >= 0) {
+      for (const h of Object.keys(changes)) {
+        if (changes[h] !== undefined) {
+          cached.rows[idx][h] = changes[h];
+        }
+      }
+      setCache(`tab:${tabName}`, cached);
+    } else {
+      invalidateCache(`tab:${tabName}`);
+    }
+  } else {
+    invalidateCache(`tab:${tabName}`);
+  }
 }
 
 /**
@@ -575,6 +633,7 @@ export function rowToProduct(r: Record<string, any>): Product {
     min_stock: r.min_stock === "" || r.min_stock === undefined ? undefined : Math.round(toNumber(r.min_stock)),
     description: String(r.description ?? ""),
     is_active: !["false", "0", "no", ""].includes(String(r.is_active ?? "true").trim().toLowerCase()),
+    source_id: String(r.source_id ?? ""),
   };
 }
 
@@ -586,6 +645,7 @@ export function rowToCustomer(r: Record<string, any>): Customer {
     address: String(r.address ?? ""),
     notes: String(r.notes ?? ""),
     is_active: !["false", "0", "no", ""].includes(String(r.is_active).trim().toLowerCase()),
+    source_id: String(r.source_id ?? ""),
   };
 }
 

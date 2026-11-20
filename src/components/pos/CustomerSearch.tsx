@@ -21,6 +21,9 @@ export default function CustomerSearch({
   const [all, setAll] = useState<Customer[]>([]);
   const [open, setOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState(-1);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [sharedName, setSharedName] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,6 +62,13 @@ export default function CustomerSearch({
     onChange({ location: c.location, phone: c.phone, address: c.address });
     setQuery(c.location);
     setOpen(false);
+    // Fetch outstanding balance for this customer
+    setBalance(null);
+    setBalanceLoading(true);
+    api<{ balance: number; sharedName: boolean }>(`/api/customers/${c.id}/balance`)
+      .then((r) => { setBalance(r.balance); setSharedName(r.sharedName); })
+      .catch(() => setBalance(null))
+      .finally(() => setBalanceLoading(false));
   }
 
   function onKey(e: React.KeyboardEvent) {
@@ -121,6 +131,19 @@ export default function CustomerSearch({
 
       {value.location && matches.length === 0 && !open && (
         <div className="text-[11px] text-amber-300/80 mt-1">Using free text: {value.location}</div>
+      )}
+      {value.location && (
+        <div className="text-[11px] text-slate-400 mt-1">
+          {balanceLoading
+            ? "Checking balance…"
+            : balance !== null && balance > 0
+              ? sharedName
+                ? `Outstanding (shared name — may include other customers): Ksh ${balance.toFixed(2)}`
+                : `Outstanding: Ksh ${balance.toFixed(2)}`
+              : balance !== null
+                ? "No outstanding"
+                : ""}
+        </div>
       )}
     </div>
   );

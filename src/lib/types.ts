@@ -35,6 +35,7 @@ export interface Product {
   min_stock?: number;
   description?: string;
   is_active: boolean;
+  source_id?: string;
 }
 
 export interface Customer {
@@ -44,6 +45,7 @@ export interface Customer {
   address: string;
   notes: string;
   is_active: boolean;
+  source_id?: string;
 }
 
 export interface CartItem {
@@ -133,6 +135,7 @@ export interface DashboardSummary {
 /** A single open debt ledger row grouped under a customer account. */
 export interface DebtRow {
   id: string;
+  source?: "order" | "opening";
   date: string;
   time: string;
   total: number;

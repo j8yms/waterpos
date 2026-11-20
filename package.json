@@ -2,11 +2,18 @@
   "name": "posx",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "test": "tsx src/scripts/self-test.ts",
+    "test:migration": "tsx src/scripts/migration-test.ts",
+    "test:repayment": "tsx src/scripts/repayment-test.ts",
+    "test:repayment-service": "tsx src/scripts/repayment-service-test.ts",
+    "test:cache": "tsx src/scripts/cache-invalidation-test.ts",
     "import:aronium": "tsx src/scripts/import-aronium.ts",
     "import:aronium-sqlite": "tsx src/scripts/import-aronium-sqlite.ts",
     "lint": "eslint"

@@ -105,9 +105,16 @@ export const LEDGER_HEADERS: string[] = [
 ];
 
 export const TABS: Record<string, string[]> = {
-  PRODUCTS: ["id", "name", "category", "selling_price", "wholesale_cost", "unit", "color", "stock", "min_stock", "description", "is_active", "updated_at"],
+  PRODUCTS: ["id", "name", "category", "selling_price", "wholesale_cost", "unit", "color", "stock", "min_stock", "description", "is_active", "updated_at", "source_id"],
   STOCK_ADJUSTMENTS: ["id", "product_id", "product_name", "previous_stock", "new_stock", "change", "reason", "adjusted_by", "adjusted_at"],
-  CUSTOMERS: ["id", "location", "phone", "address", "notes", "is_active", "updated_at"],
+  SUPPLIERS: ["id", "source_id", "name", "phone", "address", "email", "tax_number", "is_active", "created_at", "updated_at"],
+  BARCODES: ["id", "source_id", "product_id", "value", "created_at"],
+  OPENING_DEBTS: ["id", "source_id", "source_document_id", "document_number", "customer_id", "source_customer_id", "customer", "phone", "address", "outstanding", "original_amount", "currency", "debt_date", "due_date", "status", "review_status", "notes", "created_at", "updated_at", "last_payment_at"],
+  IMPORT_LOG: ["id", "source_file", "started_at", "completed_at", "mode", "counts", "status", "notes"],
+  PAYMENT_OPERATIONS: ["id", "payment_ref", "customer", "amount", "method", "status", "allocations", "error", "created_at", "updated_at"],
+  PAYMENT_OPERATION_ITEMS: ["id", "payment_ref", "debt_source", "debt_id", "amount", "status", "error", "created_at", "updated_at"],
+  RECEIPT_SETTINGS: ["id", "settings_json", "updated_at"],
+  CUSTOMERS: ["id", "location", "phone", "address", "notes", "is_active", "updated_at", "source_id"],
   // ORDERS is the live dispatch ledger; OUT is the legacy tab earlier
   // spreadsheet versions used. Both share the same layout so reads,
   // writes and the M-PESA matcher stay correct regardless of which tab
@@ -118,10 +125,10 @@ export const TABS: Record<string, string[]> = {
   IN: ["id", "date", "time", "product_id", "product", "qty_added", "unit_cost", "new_price", "operator", "created_at"],
   // REPAYMENTS is the cash/M-Pesa cash-flow log appended to on every
   // recorded debt repayment (action "logRepayment").
-  REPAYMENTS: ["id", "date", "time", "customer", "order_id", "amount", "method", "notes", "created_at"],
+  REPAYMENTS: ["id", "date", "time", "customer", "order_id", "amount", "method", "debt_source", "payment_ref", "notes", "created_at"],
   // SUBSCRIPTIONS stores one row per rider device that opted into Web-Push
   // dispatch alerts (rider, endpoint, p256dh, auth).
   SUBSCRIPTIONS: ["rider", "endpoint", "p256dh", "auth", "created_at"],
 };
 
-export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS", "SUBSCRIPTIONS", "STOCK_ADJUSTMENTS"];
+export const SEED_TABS = ["PRODUCTS", "CUSTOMERS", "ORDERS", "USERS", "IN", "REPAYMENTS", "SUBSCRIPTIONS", "STOCK_ADJUSTMENTS", "SUPPLIERS", "BARCODES", "OPENING_DEBTS", "IMPORT_LOG", "PAYMENT_OPERATIONS", "PAYMENT_OPERATION_ITEMS", "RECEIPT_SETTINGS"];

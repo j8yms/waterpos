@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, cacheAssignments, clearAuth, currentUser, flushPendingOps } from "@/lib/client";
 import { money, nairobiDate } from "@/lib/pricing";
 import { printToNetwork, receiptFromOrder } from "@/lib/print";
+import { useReceiptSettings } from "@/lib/receiptSettings";
 import { Spinner } from "@/components/ui";
 import type { DispatchOrder } from "@/lib/types";
 
@@ -45,6 +46,7 @@ const tones = [
 export default function RiderQueue() {
   const router = useRouter();
   const me = currentUser();
+  const receiptSettings = useReceiptSettings();
   const [orders, setOrders] = useState<DispatchOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -450,7 +452,7 @@ async function claimOrder(order: DispatchOrder) {
                       </div>
                       <button
                         onClick={async () =>
-                          await printToNetwork(receiptFromOrder(o, { operator: me?.name || "Rider" }))
+                          await printToNetwork(receiptFromOrder(o, { operator: me?.name || "Rider", settings: receiptSettings }))
                         }
                         className="shrink-0 text-xs font-black px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white active:scale-95 transition"
                       >

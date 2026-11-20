@@ -108,7 +108,9 @@ export default function ProductSearch({
                     {p.stock <= 0 ? "OUT OF STOCK" : `${p.stock} ${p.unit} left`}
                   </span>
                 </span>
-                <span className="text-sm font-black text-emerald-400">{money(p.selling_price)}</span>
+                <span className="text-sm font-black text-emerald-400">
+                  {Number.isFinite(p.selling_price) ? money(p.selling_price) : "Invalid price"}
+                </span>
               </button>
             </li>
           ))}
