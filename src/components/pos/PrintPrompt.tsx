@@ -20,8 +20,8 @@ export default function PrintPrompt({
   onClose,
 }: PrintPromptProps) {
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 20 }}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ zIndex: 30 }}>
         <h2>Print receipt</h2>
         <p className="muted">
           Order <strong>#{order.id}</strong> — {order.customer}

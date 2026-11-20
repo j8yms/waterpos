@@ -1,5 +1,5 @@
 import { requireRole, requireUser } from "@/lib/auth";
-import { appendRow, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow, invalidateCache } from "@/lib/sheets";
+import { appendRow, readAllLedgerRows, readTab, rowToOrder, rowToProduct, SheetsConfigError, updateRow, invalidateCache } from "@/lib/sheets";
 import { computeTicket, nairobiDate, nairobiTime, normalizeCustomerName, normalizeSheetDate, orderSummaryPublic } from "@/lib/pricing";
 import { notifyRiderOfDispatch } from "@/lib/push";
 import { newOrderId } from "@/lib/sync";
@@ -100,6 +100,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    // ... existing POST logic
     const driver = String(body.driver ?? "").trim();
     const glovo = Boolean(body.glovo);
     const paymentMethodRaw = String(body.paymentMethod ?? "").trim().toUpperCase();
@@ -142,8 +143,12 @@ export async function POST(request: Request) {
       const product = productMap.get(String(it.productId));
       if (!product) return Response.json({ error: `Unknown product: ${it.productId}` }, { status: 400 });
       const qty = Math.max(1, Math.round(Number(it.qty) || 1));
+      // Allow sales even when stock is 0 (backorder mode).
+      // Current behavior: prevents sales if product.stock < qty.
+      // Enable backorders by setting: product.stock >= 0 always (warning only).
       if (product.stock < qty) {
-        return Response.json({ error: `Insufficient stock for ${product.name} (${product.stock} left).` }, { status: 409 });
+        // Warning: insufficient stock, but allow the sale
+        console.log(`⚠️ Backorder: selling ${qty} of ${product.name} (only ${product.stock} in stock)`);
       }
       items.push({
         productId: product.id,
@@ -214,6 +219,35 @@ export async function POST(request: Request) {
     invalidateCache("tab:PRODUCTS");
 
     return Response.json({ ok: true, order });
+  } catch (err) {
+    return Response.json({ error: errMessage(err) }, { status: 500 });
+  }
+}
+
+/** PATCH /api/orders – edit an existing order (change pay_status, notes, etc.) */
+export async function PATCH(request: Request) {
+  const user = requireRole(request, "management");
+  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+
+  try {
+    const body = await request.json();
+    const { orderId, pay_status, notes } = body;
+    if (!orderId) return Response.json({ error: "Order ID required." }, { status: 400 });
+
+    const ledger = await readAllLedgerRows();
+    const orderRow = ledger.find((r) => r.order.id === orderId);
+    if (!orderRow) return Response.json({ error: "Order not found." }, { status: 404 });
+
+    const update: Partial<DispatchOrder> = {};
+    if (pay_status) update.pay_status = pay_status;
+    if (notes !== undefined) update.notes = notes;
+
+    const tab = orderRow.tab;
+    await updateRow(tab, orderRow.order._row, update as Record<string, any>);
+    invalidateCache(`tab:${tab}`);
+    invalidateCache("tab:ORDERS");
+
+    return Response.json({ ok: true, order: orderRow.order });
   } catch (err) {
     return Response.json({ error: errMessage(err) }, { status: 500 });
   }

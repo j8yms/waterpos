@@ -13,6 +13,6 @@ assert.equal(data.footerText, "Thanks!");
 assert.equal(data.showQty, true);
 assert.equal(data.showPrices, true);
 assert.equal(data.mpesaCode, "ABC123");
-assert.equal(data.total, 1000);
+assert.equal(data.subtotal, 1000);
 console.log("PASS: receiptFromOrder applies settings correctly");
 process.exit(0);

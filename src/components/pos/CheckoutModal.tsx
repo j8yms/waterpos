@@ -103,7 +103,7 @@ export default function CheckoutModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-20 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl border border-slate-700 bg-slate-950 p-4 shadow-2xl space-y-4">

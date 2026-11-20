@@ -1,9 +1,9 @@
 import { requireRole } from "@/lib/auth";
-import { ensureSpreadsheetStructure, readAllLedgerRows, readTab, SheetsConfigError } from "@/lib/sheets";
+import { ensureSpreadsheetStructure, invalidateCache, readAllLedgerRows, readTab, SheetsConfigError, updateRow } from "@/lib/sheets";
 import { buildDebtsLedger } from "@/lib/debts";
 import { parseProductLine } from "@/lib/pricing";
 import { GLOVO_COMMISSION } from "@/lib/config";
-import type { DebtAccount, DebtRow, GlovoMetrics, ReportsPayload, RiderMatrixRow, TopSellingItem } from "@/lib/types";
+import type { DebtAccount, DebtRow, DispatchOrder, GlovoMetrics, ReportsPayload, RiderMatrixRow, TopSellingItem } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -106,6 +106,54 @@ function buildTopSelling(orders: any[]): TopSellingItem[] {
     .map(([name, v]) => ({ name, qty: v.qty, revenue: v.revenue } as TopSellingItem))
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 5);
+}
+
+/** DELETE /api/reports/debt – remove a debt account customer from the ledger. */
+export async function DELETE(request: Request) {
+  const user = requireRole(request, "management");
+  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+
+  try {
+    const { customer } = await request.json();
+    if (!customer) return Response.json({ error: "Customer name required." }, { status: 400 });
+
+    const ledger = await readAllLedgerRows();
+    const ordersToRemove = ledger.filter(
+      (r) =>
+        String(r.order.customer || "").trim().toLowerCase() ===
+          String(customer).trim().toLowerCase() &&
+        (r.order.pay_status === "PENDING" ||
+          String(r.order.payment_method || "").toUpperCase() === "CREDIT")
+    );
+
+    if (!ordersToRemove.length) {
+      return Response.json({ error: "No matching pending/credit orders found." }, { status: 404 });
+    }
+
+    // Remove the matched orders from their respective tabs
+    const updates = ordersToRemove.map((r) => {
+      const update: Partial<DispatchOrder> = {
+        pay_status: "REJECTED",
+        payment_method: "",
+        balance: 0,
+        last_payment_at: new Date().toISOString(),
+        notes: `Cleared debt for ${customer}: ${r.order.notes || ""}`,
+      };
+      return updateRow(r.tab, r.order._row, update as Record<string, any>);
+    });
+
+    await Promise.all(updates);
+    invalidateCache("tab:ORDERS");
+    invalidateCache("tab:REPORTS");
+
+    return Response.json({
+      ok: true,
+      removed: ordersToRemove.length,
+      message: `${customer}'s debt orders marked as REJECTED and cleared.`,
+    });
+  } catch (err) {
+    return Response.json({ error: errMessage(err) }, { status: 500 });
+  }
 }
 
 function errMessage(err: unknown): string {

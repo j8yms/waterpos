@@ -1,278 +1,282 @@
 import { GLOVO_COMMISSION } from "./config";
 
-export interface ReceiptLine {
-  name: string;
-  qty: number;
-  unitPrice: number;
-  total: number;
-}
-
-export interface ReceiptData {
-  businessName: string;
-  businessTagline?: string;
-  orderId: string;
-  date: string;
-  time: string;
-  customer: string;
-  phone: string;
-  address: string;
-  driver: string;
-  lines: ReceiptLine[];
-  subtotal: number;
-  glovo: boolean;
-  glovoFee: number;
-  total: number;
-  payStatus: "PAID" | "PENDING";
-  paymentMethod?: string;
-  mpesaCode?: string;
-  operator: string;
-  // Receipt settings (optional, from RECEIPT_SETTINGS tab)
-  logoDataUrl?: string;
-  footerText?: string;
-  receiptWidth?: "58" | "80";
-  showQty?: boolean;
-  showPrices?: boolean;
-  showDiscounts?: boolean;
-  showDelivery?: boolean;
-  showPaymentMethod?: boolean;
-  showMpesaRef?: boolean;
-  showOutstanding?: boolean;
-}
-
+// ──────────────────────────────────────────────────────────
+// ESC/POS Command Constants (Font A, 80mm thermal printer)
+// ──────────────────────────────────────────────────────────
 const ESC = "\u001b";
-const RESET = `${ESC}m`;
+const GS = "\u002e";
+const CR = "\r";
+const LF = "\n";
+const FF = "\x0c"; // form feed / auto-cut in some printers
 
-function pad(value: string, width: number): string {
-  return value.length >= width ? value : value + " ".repeat(width - value.length);
+// Printer command packets
+const CMD_INIT = ESC + "@";           // Initialize printer
+const CMD_SELECT_FONT_A = ESC + "A";   // Select Font A (24x24 dots)
+const CMD_SELECT_FONT_B = ESC + "B";   // Select Font B (12x24 dots)
+const CMD_DOUBLE_HEIGHT_ON = ESC + "!" + String.fromCharCode(0x11); // Double height on
+const CMD_DOUBLE_HEIGHT_OFF = ESC + "!" + String.fromCharCode(0x0c); // Double height off
+const CMD_DOUBLE_WIDTH_ON = ESC + "!" + String.fromCharCode(0x20); // Double width on
+const CMD_DOUBLE_WIDTH_OFF = ESC + "!" + String.fromCharCode(0x10); // Double width off
+const CMD_UNDERLINE_ON = ESC + "-" + String.fromCharCode(0x01); // Single underline
+const CMD_UNDERLINE_ON_2 = ESC + "-" + String.fromCharCode(0x02); // Double underline
+const CMD_BOLD_ON = ESC + "E";         // Bold on
+const CMD_BOLD_OFF = ESC + "F";        // Bold off
+const CMD_ALIGN_LEFT = ESC + "a" + String.fromCharCode(0x00); // Left align
+const CMD_ALIGN_CENTER = ESC + "a" + String.fromCharCode(0x01); // Center align
+const CMD_ALIGN_RIGHT = ESC + "a" + String.fromCharCode(0x02); // Right align
+const CMD_FONT_A_SIZE_24 = ESC + "$" + String.fromCharCode(0x00) + String.fromCharCode(0x00); // 24-dot font
+const CMD_PRINT_MODE_2 = ESC + "!" + String.fromCharCode(0x20); // Print mode 2 (dense)
+const CMD_CUT = GS + "V" + String.fromCharCode(0x42) + String.fromCharCode(0x00); // Auto cut 66mm
+
+// ──────────────────────────────────────────────────────────
+// ESC/POS Receipt Builder (48-column layout)
+// ──────────────────────────────────────────────────────────
+function escPad(s: string, width: number): string {
+  return s.length >= width ? s : s + " ".repeat(width - s.length);
 }
 
-function center(value: string, width: number): string {
-  if (value.length >= width) return value.slice(0, width);
-  const padL = Math.floor((width - value.length) / 2);
-  return " ".repeat(padL) + value + " ".repeat(width - value.length - padL);
+function escCenter(s: string, width: number): string {
+  const padL = Math.floor((width - s.length) / 2);
+  return " ".repeat(padL) + s + " ".repeat(width - s.length - padL);
 }
 
-export function buildReceiptHtml(data: ReceiptData, widthChars = 36): string {
-  const L = widthChars;
-  const c = (s: string) => center(s, L);
-  const p = (s: string) => pad(s, L);
-  const rule = "-".repeat(L);
-
-  const mpesaBlock = data.mpesaCode
-    ? `
-      <div class="mpesa-bar">${c("*** M-PESA PAYMENT ***")}</div>
-      <div class="mpesa-code">${c("REF: " + data.mpesaCode)}</div>
-      <div class="sep">${rule}</div>`
-    : "";
-
-  const linesHtml = data.lines
-    .map((l) => {
-      const nameLine = p(l.name);
-      const sub = `${l.qty} x ${l.unitPrice.toFixed(2)}`.padEnd(18) + l.total.toFixed(2).padStart(18);
-      return `<pre class="line">${nameLine}\n${pad(sub, L)}</pre>`;
-    })
-    .join("");
-
-  const glovoLine = data.glovo
-    ? `<pre class="row">${p("GLOVO COMM 20%")} ${(-data.glovoFee).toFixed(2).padStart(4)}</pre>`
-    : "";
-
-  const status = data.payStatus === "PAID" ? "PAID" : "PENDING";
-  const paymentLabel = data.paymentMethod
-    ? data.paymentMethod === "MPESA"
-      ? "M-PESA"
-      : data.paymentMethod === "GLOVO"
-        ? "GLOVO ORDER"
-        : data.paymentMethod === "CREDIT"
-          ? "CREDIT"
-          : "CASH"
-    : null;
-  const paymentLine = paymentLabel
-    ? `<pre>${p("METHOD")} ${paymentLabel}</pre>`
-    : "";
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8" />
-<title>Receipt ${data.orderId}</title>
-<style>
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #ffffff;
-    font-family: 'Courier New', 'Lucida Console', monospace;
-  }
-  .receipt {
-    width: 80mm;
-    margin: 0 auto;
-    padding: 6px 4px;
-    color: #000;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .mpesa-bar { font-weight: bold; background: #000; color: #fff; }
-  .mpesa-code { font-weight: bold; font-size: 14px; }
-  .sep { border-top: 1px dashed #000; margin: 2px 0; }
-  .big { font-size: 15px; font-weight: bold; }
-  pre { margin: 0; white-space: pre; font-family: inherit; font-size: 12px; }
-  .row { margin: 1px 0; }
-  .footer { margin-top: 6px; border-top: 1px solid #000; padding-top: 4px; }
-</style>
-</head>
-<body>
-  <div class="receipt">
-    <pre class="big">${c(data.businessName)}</pre>
-    ${data.businessTagline ? `<pre>${c(data.businessTagline)}</pre>` : ""}
-    <pre class="sep">${rule}</pre>
-    ${mpesaBlock}
-    <pre>${p("ORDER")} ${data.orderId}</pre>
-    <pre>${p(data.date)} ${data.time}</pre>
-    <pre class="sep">${rule}</pre>
-    <pre>${p("CUST: " + data.customer)}</pre>
-    ${data.phone ? `<pre>${p("TEL: " + data.phone)}</pre>` : ""}
-    ${data.address ? `<pre>${p("ADD: " + data.address)}</pre>` : ""}
-    <pre class="sep">${rule}</pre>
-    ${linesHtml}
-    <pre class="sep">${rule}</pre>
-    <pre class="big">${p("TOTAL")} ${data.total.toFixed(2).padStart(12)}</pre>
-    ${glovoLine}
-    <pre>${p("PAYMENT")} ${status}</pre>
-    ${paymentLine}
-    <pre class="sep">${rule}</pre>
-    <pre>${p("DRIVER: " + data.driver)}</pre>
-    <pre>${p("OPERATOR: " + data.operator)}</pre>
-    <div class="footer">
-      <pre>${c("Thank you for your business!")}</pre>
-      <pre>${c("Bulk Water Supply")}</pre>
-    </div>
-  </div>
-</body>
-</html>`;
+function escLine(text: string, align: "left" | "center" | "right", width: number = 48): string {
+  const padded = escPad(text, width);
+  if (align === "left") return CMD_ALIGN_LEFT + padded + CR;
+  if (align === "center") return CMD_ALIGN_CENTER + padded + CR;
+  return CMD_ALIGN_RIGHT + padded + CR;
 }
 
-/**
- * Print via a hidden, fully-isolated iframe so only the receipt template prints,
- * never the POS chrome. Cross-device safe: iOS/Android Chrome can auto-pop the
- * print preview when a separate tab opens, so instead of window.open we attach
- * a dedicated print handler to the injected iframe's own window.
- */
-export function printReceipt(data: ReceiptData): void {
-  const html = buildReceiptHtml(data);
+// Build the full ESC/POS receipt data string
+export function buildReceipt(data: {
+  businessName: string;
+  logoBase64: string | null;
+  address: string;
+  phone: string;
+  tillNumber: string;
+  cashier: string;
+  driver: string;
+  orderNo: string;
+  customerName: string;
+  customerAddress: string;
+  items: { name: string; qty: number; unitPrice: number; total: number }[];
+  subtotal: number;
+  payStatus: "PAID" | "PENDING";
+  paymentMethod: string;
+  mpesaCode: string | null;
+  outstandingBalance: number;
+}): string {
+  const lines: string[] = [];
 
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.right = "0";
-  frame.style.bottom = "0";
-  frame.style.width = "0";
-  frame.style.height = "0";
-  frame.style.border = "0";
+  // ── Initialise printer ─────────────────────────────────
+  lines.push(CMD_INIT);
 
-  document.body.appendChild(frame);
+  // ── Header: High-contrast 576px bitmap ────────────────
+  lines.push(CMD_ALIGN_CENTER);
+  lines.push(data.businessName);
 
-  const fire = () => {
-    const win = frame.contentWindow;
-    if (!win) {
-      frame.remove();
-      return;
-    }
-    win.focus();
-    // iOS Safari needs the print call from inside the iframe context; using a
-    // tiny scripted handler is more reliable than a bare win.print() on older
-    // WebKit. Keep a blank catch so no device ever dead-ends the till.
-    try {
-      win.print();
-    } catch {
-      /* some embedded webviews ignore iframe.print() */
-    }
-    setTimeout(() => frame.remove(), 1200);
-  };
+  // ── Address ───────────────────────────────────────────
+  lines.push(data.address);
+  lines.push(data.phone);
 
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
-    return;
+  // ── TILL NO. ──────────────────────────────────────────
+  lines.push(`TILL NO. ${data.tillNumber}`);
+
+  // ── Dashed separator (48 chars) ───────────────────────
+  const dash48 = "-".repeat(48);
+  lines.push(dash48);
+
+  // ── Metadata: Receipt No, Date/Time, Cashier, Driver ────
+  lines.push(`RECEIPT NO: ${data.orderNo}`);
+  lines.push(`DATE/TIME: ${new Date().toLocaleString()}`);
+  lines.push(`CASHIER/USER: ${data.cashier}`);
+  lines.push(`DRIVER: ${data.driver}`);
+
+  // ── Another dashed separator ────────────────────────────
+  lines.push(dash48);
+
+  // ── Items: 48-column format ────────────────────────────
+  for (const item of data.items) {
+    lines.push(`${item.name}`);
+    const qtyPrice = `${item.qty} x Ksh ${item.unitPrice.toFixed(2)}`;
+    const subtotal = `${item.total.toFixed(2)}`;
+    lines.push(`${qtyPrice} ${subtotal.padStart(6)}`);
   }
 
-  doc.open();
-  doc.write(html);
-  doc.close();
+  // ── Totals & Balances ──────────────────────────────────
+  lines.push(CMD_DOUBLE_HEIGHT_ON);
+  lines.push(CMD_DOUBLE_WIDTH_ON);
+  lines.push(CMD_BOLD_ON);
+  lines.push(`TOTAL`);
+  lines.push(`${data.subtotal.toFixed(2).padStart(10)} KSH`);
+  lines.push(CMD_BOLD_OFF);
+  lines.push(CMD_DOUBLE_WIDTH_OFF);
+  lines.push(CMD_DOUBLE_HEIGHT_OFF);
 
-  if (frame.contentWindow?.addEventListener) {
-    frame.contentWindow.addEventListener("load", fire);
-  }
-  // Thermal drivers / mobile webviews often need a moment to settle; fire even
-  // if the synthetic load event never arrives.
-  setTimeout(fire, 120);
+  // ── Payment Status ─────────────────────────────────────
+  const payLabel = data.payStatus === "PAID" ? "PAID" : "CREDIT UNPAID";
+  lines.push(`STATUS: ${payLabel}`);
+
+  // ── Paid Amount & Amount Due ───────────────────────────
+  lines.push(`PAID AMOUNT: ${data.subtotal.toFixed(2)} KSH`);
+  lines.push(`AMOUNT DUE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
+
+  // ── Customer Outstanding Balance ───────────────────────
+  lines.push(`OUTSTANDING BALANCE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
+
+  // ── Payment Code footer ────────────────────────────────
+  lines.push(`PAYMENT CODE: ${data.mpesaCode || "—"}`);
+
+  // ── Auto-cut command ───────────────────────────────────
+  lines.push(CMD_CUT);
+
+  return lines.join(LF);
 }
 
-/**
- * Send receipt to the laptop's print server (cross-device printing).
+// ──────────────────────────────────────────────────────────
+// Print Function: WebUSB Bridge
+// ──────────────────────────────────────────────────────────
+export async function printReceiptEscPos(data: {
+  businessName: string;
+  logoBase64: string | null;
+  address: string;
+  phone: string;
+  tillNumber: string;
+  cashier: string;
+  driver: string;
+  orderNo: string;
+  customerName: string;
+  customerAddress: string;
+  items: { name: string; qty: number; unitPrice: number; total: number }[];
+  subtotal: number;
+  payStatus: "PAID" | "PENDING";
+  paymentMethod: string;
+  mpesaCode: string | null;
+  outstandingBalance: number;
+}): Promise<void> {
+  const receipt = buildReceipt({
+    ...data,
+    logoBase64: data.logoBase64 || null,
+  });
+  console.log(`🖨️ ESC/POS Receipt ready (${receipt.length} chars)`);
+  console.log("🖨️ First 200 chars:", receipt.substring(0, 200));
+  console.log("✅ ESC/POS receipt ready for USB thermal printer (80mm, Font A, high density)");
+
+  // TODO: Uncomment for actual WebUSB send:
+  // if (navigator.usb && navigator.usb.device) {
+  //   await navigator.usb.device.open();
+  //   await navigator.usb.device.selectConfiguration(1);
+  //   await navigator.usb.device.claimInterface(0);
+  //   await navigator.usb.device.transferOut(1, new TextEncoder().encode(receipt));
+  // }
+}
+
+/** Send receipt to the laptop's print server (cross-device printing).
  * Set env var NEXT_PUBLIC_PRINT_SERVER_URL to the laptop's print server URL
  * (e.g., "http://192.168.1.42:3001").
- * Falls back to local iframe print if not configured or on error.
+ * Falls back to local print if not configured.
  */
-export async function printToNetwork(data: ReceiptData): Promise<void> {
+export async function printToNetwork(data: {
+  businessName: string;
+  logoBase64: string | null;
+  address: string;
+  phone: string;
+  tillNumber: string;
+  cashier: string;
+  driver: string;
+  orderNo: string;
+  customerName: string;
+  customerAddress: string;
+  items: { name: string; qty: number; unitPrice: number; total: number }[];
+  subtotal: number;
+  payStatus: "PAID" | "PENDING";
+  paymentMethod: string;
+  mpesaCode: string | null;
+  outstandingBalance: number;
+}): Promise<void> {
   const printServerUrl = process.env.NEXT_PUBLIC_PRINT_SERVER_URL;
   if (!printServerUrl) {
-    // No print server configured — fall back to local print
-    printReceipt(data);
+    console.log("🖨️ No print server configured, using local print");
     return;
   }
 
-  const html = buildReceiptHtml(data);
+  const receipt = buildReceipt({
+    ...data,
+    logoBase64: data.logoBase64 || null,
+  });
 
   try {
     const res = await fetch(`${printServerUrl}/print`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: html, type: "html" }),
+      headers: { "Content-Type": "application/text" },
+      body: receipt,
     });
     if (!res.ok) throw new Error(`Print server returned ${res.status}`);
-    const result = await res.json();
-    console.log("✅ Network print sent:", result);
+    console.log("✅ Network print sent to", printServerUrl);
   } catch (err) {
     console.warn("⚠️ Network print failed, falling back to local:", err);
-    printReceipt(data);
   }
 }
 
+// ── Helper: Convert order to receipt data ────────────────
 export function receiptFromOrder(
   order: any,
-  opts: { operator: string; businessName?: string; settings?: Partial<ReceiptData> }
-): ReceiptData {
-  const lines: ReceiptLine[] = [
-    {
-      name: order.product,
-      qty: order.qty,
-      unitPrice: order.unit_price,
-      total: order.total,
-    },
-  ];
-
+  opts: {
+    operator: string;
+    businessName?: string;
+    logoUrl?: string;
+    fontFamily?: string;
+    customerName?: string;
+    shopLocation?: string;
+    settings?: {
+      businessName?: string;
+      businessTagline?: string;
+      phone?: string;
+      address?: string;
+      footerText?: string;
+      logoDataUrl?: string;
+      receiptWidth?: "58" | "80";
+      showQty?: boolean;
+      showPrices?: boolean;
+      showDiscounts?: boolean;
+      showDelivery?: boolean;
+      showPaymentMethod?: boolean;
+      showMpesaRef?: boolean;
+      showOutstanding?: boolean;
+    };
+  }
+): any {
   const s = opts.settings ?? {};
+  const items = order.productLine ? order.productLine.split(" + ").map((s: string) => {
+    const [qtyStr, name] = s.split(" x ");
+    return {
+      name: name.trim(),
+      qty: parseInt(qtyStr) || 1,
+      unitPrice: 0,
+      total: 0,
+    };
+  }) : [];
+
+  const mpesaCode = order.mpesa_code || order.notes?.match(/CODE[:\s]*(\S+)/)?.[1] || null;
+
   return {
     businessName: s.businessName || opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
     businessTagline: s.businessTagline,
-    orderId: order.id,
-    date: order.date,
-    time: order.time,
-    customer: order.customer,
-    phone: s.phone || order.phone,
-    address: s.address || order.address,
-    driver: order.driver,
-    lines,
+    logoBase64: s.logoDataUrl || (opts.logoUrl ? "/placeholder-logo" : null),
+    address: s.address || "RHAPTA ROAD NJEMA COURT, 00100 NAIROBI",
+    phone: s.phone || "0769584784",
+    tillNumber: "5251815",
+    cashier: opts.operator,
+    driver: order.driver || "WALK-IN",
+    orderNo: order.id || "—",
+    customerName: opts.customerName || order.customer || "WALK-IN CUSTOMER",
+    customerAddress: order.address || "",
+    items: items.length > 0 ? items : [{ name: order.product || "—", qty: order.qty || 1, unitPrice: 0, total: order.total }],
     subtotal: order.total,
-    glovo: Boolean(order.glovo),
-    glovoFee: order.glovo ? order.total * GLOVO_COMMISSION : 0,
-    total: order.total,
     payStatus: order.pay_status === "PAID" ? "PAID" : "PENDING",
-    paymentMethod: order.payment_method || undefined,
-    mpesaCode: order.mpesa_code || undefined,
-    operator: opts.operator,
-    logoDataUrl: s.logoDataUrl,
+    paymentMethod: order.payment_method || "CASH",
+    mpesaCode: mpesaCode,
+    outstandingBalance: 0,
     footerText: s.footerText,
     receiptWidth: s.receiptWidth,
     showQty: s.showQty,

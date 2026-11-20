@@ -7,8 +7,8 @@
     "outstanding": 5540,
     "currency": "KES",
     "notes": "Historical opening balance from 25 unpaid credit invoice(s) as of 2026-06-26 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.418Z",
+    "updated_at": "2026-11-18T07:04:14.418Z"
   },
   {
     "id": "C000002",
@@ -18,8 +18,8 @@
     "outstanding": 200,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-05-25 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000003",
@@ -29,8 +29,8 @@
     "outstanding": 2400,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-05-29 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000004",
@@ -40,8 +40,8 @@
     "outstanding": 2980,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-05-29 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000005",
@@ -51,8 +51,8 @@
     "outstanding": 3200,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000006",
@@ -62,8 +62,8 @@
     "outstanding": 700,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000007",
@@ -73,8 +73,8 @@
     "outstanding": 3510,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-18 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000008",
@@ -84,8 +84,8 @@
     "outstanding": 4200,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-22 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000009",
@@ -95,8 +95,8 @@
     "outstanding": 1400,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-22 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000010",
@@ -106,8 +106,8 @@
     "outstanding": 2400,
     "currency": "KES",
     "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-06-28 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000011",
@@ -117,8 +117,8 @@
     "outstanding": 700,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-24 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000012",
@@ -128,8 +128,8 @@
     "outstanding": 1300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-26 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000013",
@@ -139,8 +139,8 @@
     "outstanding": 1300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-26 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000014",
@@ -150,8 +150,8 @@
     "outstanding": 650,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-26 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000015",
@@ -161,8 +161,8 @@
     "outstanding": 1950,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-27 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000016",
@@ -172,8 +172,8 @@
     "outstanding": 650,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-27 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000017",
@@ -183,8 +183,8 @@
     "outstanding": 700,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-27 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000018",
@@ -194,8 +194,8 @@
     "outstanding": 2200,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-28 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000019",
@@ -205,8 +205,8 @@
     "outstanding": 700,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-28 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000020",
@@ -216,8 +216,8 @@
     "outstanding": 550,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-29 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000021",
@@ -227,19 +227,19 @@
     "outstanding": 550,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-06-29 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000022",
     "customer": "dad",
     "phone": "",
     "address": "",
-    "outstanding": 6505,
+    "outstanding": 6640,
     "currency": "KES",
-    "notes": "Historical opening balance from 21 unpaid credit invoice(s) as of 2026-09-14 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 23 unpaid credit invoice(s) as of 2026-09-29 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000023",
@@ -249,854 +249,1778 @@
     "outstanding": 3300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-07-13 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000024",
-    "customer": "ALEX CHEMIST",
-    "phone": "",
-    "address": "",
-    "outstanding": 350,
-    "currency": "KES",
-    "notes": "Historical opening balance from 6 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000025",
     "customer": "GATE 80 SOLDIER",
     "phone": "",
     "address": "",
     "outstanding": 1300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-07-18 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000026",
+    "id": "C000025",
     "customer": "CATE KINYOZI",
     "phone": "",
     "address": "",
     "outstanding": 90,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-07-19 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000027",
+    "id": "C000026",
     "customer": "MUTHANGARI RESIDENCE HS1",
     "phone": "",
     "address": "",
     "outstanding": 700,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-07-24 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000028",
+    "id": "C000027",
     "customer": "GOLDEN PARK HOMES C1",
     "phone": "",
     "address": "",
     "outstanding": 600,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-07-28 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000029",
+    "id": "C000028",
     "customer": "SK",
     "phone": "",
     "address": "",
     "outstanding": 1200,
     "currency": "KES",
     "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-07-30 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000030",
-    "customer": "New kitisuru",
-    "phone": "",
-    "address": "",
-    "outstanding": 7000,
-    "currency": "KES",
-    "notes": "Historical opening balance from 5 unpaid credit invoice(s) as of 2026-09-08 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000031",
+    "id": "C000029",
     "customer": "daisy road 136",
     "phone": "",
     "address": "",
     "outstanding": 3400,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-04 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000032",
+    "id": "C000030",
     "customer": "ROYAL HEIGHT B7",
     "phone": "",
     "address": "",
     "outstanding": 1200,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-09 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000033",
+    "id": "C000031",
     "customer": "COZY GARDENS C-2-12",
     "phone": "",
     "address": "",
     "outstanding": 1300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-11 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000034",
+    "id": "C000032",
     "customer": "EVERHOME  APRT A102",
     "phone": "",
     "address": "",
     "outstanding": 850,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-11 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000035",
-    "customer": "gate99",
-    "phone": "",
-    "address": "",
-    "outstanding": 720,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000036",
+    "id": "C000033",
     "customer": "101 ibis crescent",
     "phone": "",
     "address": "",
     "outstanding": 2100,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000037",
+    "id": "C000034",
     "customer": "MALKYA HEIGHTS RD 12,P1",
     "phone": "",
     "address": "",
     "outstanding": 650,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-13 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000038",
+    "id": "C000035",
     "customer": "convent drive 296",
     "phone": "",
     "address": "",
     "outstanding": 1950,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-17 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000039",
+    "id": "C000036",
     "customer": "enaki m401",
     "phone": "",
     "address": "",
     "outstanding": 1100,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-17 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000040",
+    "id": "C000037",
     "customer": "GLOVO RIVAAN CENTER WING B",
     "phone": "",
     "address": "",
     "outstanding": 650,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-18 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000041",
+    "id": "C000038",
     "customer": "GLOVO THE CRESCENT APRT A33",
     "phone": "",
     "address": "",
     "outstanding": 850,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-19 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000042",
-    "customer": "ROBIN MUSAKALA",
-    "phone": "",
-    "address": "",
-    "outstanding": 2910,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000043",
+    "id": "C000039",
     "customer": "31 REDHILL GARDEN",
     "phone": "",
     "address": "",
     "outstanding": 2600,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-19 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000044",
+    "id": "C000040",
     "customer": "ROYAL HEIGHTS B7",
     "phone": "",
     "address": "",
     "outstanding": 1500,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-19 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000045",
+    "id": "C000041",
     "customer": "PURPLEHAZE B807",
     "phone": "",
     "address": "",
     "outstanding": 3250,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-22 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000046",
+    "id": "C000042",
     "customer": "ENAKI TOWN M401 GLOVO",
     "phone": "",
     "address": "",
     "outstanding": 1360,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-22 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000047",
-    "customer": "DUPLEX A3",
-    "phone": "",
-    "address": "",
-    "outstanding": 4800,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-14 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000048",
-    "customer": "MFS",
-    "phone": "",
-    "address": "",
-    "outstanding": 11700,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-01 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000049",
+    "id": "C000043",
     "customer": "PURPLE HAZE B203 GLOVO",
     "phone": "",
     "address": "",
     "outstanding": 2800,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-24 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000050",
-    "customer": "RIVERSIDE MANSION",
-    "phone": "",
-    "address": "",
-    "outstanding": 1400,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-24 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000051",
+    "id": "C000044",
     "customer": "MUKUYU APRT 8D GLOVO",
     "phone": "",
     "address": "",
     "outstanding": 1550,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-25 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000052",
+    "id": "C000045",
     "customer": "SYKNEST 1403",
     "phone": "",
     "address": "",
     "outstanding": 1750,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-25 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000053",
+    "id": "C000046",
     "customer": "DELTA ANNEX 2,KOTRA",
     "phone": "",
     "address": "",
     "outstanding": 4900,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-26 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000054",
+    "id": "C000047",
     "customer": "MOSIRO COURT",
     "phone": "",
     "address": "",
     "outstanding": 1300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-26 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000055",
-    "customer": "BENARD ARSENAL",
-    "phone": "",
-    "address": "",
-    "outstanding": 280,
-    "currency": "KES",
-    "notes": "Historical opening balance from 4 unpaid credit invoice(s) as of 2026-08-29 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000056",
-    "customer": "Davard",
-    "phone": "",
-    "address": "",
-    "outstanding": 1050,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-27 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000057",
+    "id": "C000048",
     "customer": "ELITE PLAZA B7",
     "phone": "",
     "address": "",
     "outstanding": 3400,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-27 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000058",
+    "id": "C000049",
     "customer": "antony",
     "phone": "",
     "address": "",
     "outstanding": 840,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-08-31 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000059",
-    "customer": "SEPAL GARNET 603",
-    "phone": "",
-    "address": "",
-    "outstanding": 2400,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-01 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000060",
-    "customer": "RUMAISA D2",
-    "phone": "",
-    "address": "",
-    "outstanding": 6650,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000061",
-    "customer": "MZEE  REHAN T",
-    "phone": "",
-    "address": "",
-    "outstanding": 8790,
-    "currency": "KES",
-    "notes": "Historical opening balance from 23 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000062",
-    "customer": "RINGSVIEW A2",
-    "phone": "",
-    "address": "",
-    "outstanding": 4500,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-07 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000063",
-    "customer": "CARTRON COURTS C1",
-    "phone": "",
-    "address": "",
-    "outstanding": 3400,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-02 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000064",
-    "customer": "HILLVIEW 23",
-    "phone": "",
-    "address": "",
-    "outstanding": 3600,
-    "currency": "KES",
-    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-09-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000065",
+    "id": "C000050",
     "customer": "SPRING VALLEY GARDEN HSE A7",
     "phone": "",
     "address": "",
     "outstanding": 1950,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-06 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000066",
-    "customer": "ANTONY T",
-    "phone": "",
-    "address": "",
-    "outstanding": 210,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000067",
-    "customer": "ANMOL D4",
-    "phone": "",
-    "address": "",
-    "outstanding": 600,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-08 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000068",
-    "customer": "PEARL VALLEY PEPONI GARDEN A1",
-    "phone": "",
-    "address": "",
-    "outstanding": 2400,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000069",
-    "customer": "NO 80 B6",
-    "phone": "",
-    "address": "",
-    "outstanding": 1300,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-09 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000070",
-    "customer": "lillian",
-    "phone": "",
-    "address": "",
-    "outstanding": 2600,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000071",
+    "id": "C000051",
     "customer": "RIARA ONE C10 GLOVO",
     "phone": "",
     "address": "",
     "outstanding": 1400,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-09 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000072",
-    "customer": "HARVINS F12",
-    "phone": "",
-    "address": "",
-    "outstanding": 3900,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000073",
-    "customer": "ROSSLY LONE 38",
-    "phone": "",
-    "address": "",
-    "outstanding": 3400,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-10 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000074",
-    "customer": "Munira",
-    "phone": "",
-    "address": "",
-    "outstanding": 4400,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000075",
-    "customer": "BRAYO CHEMIST",
-    "phone": "",
-    "address": "",
-    "outstanding": 150,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-10 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000076",
-    "customer": "Gate 99",
-    "phone": "",
-    "address": "",
-    "outstanding": 515,
-    "currency": "KES",
-    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000077",
-    "customer": "AVERINA B11",
-    "phone": "",
-    "address": "",
-    "outstanding": 3000,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-11 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000078",
-    "customer": "Rehan",
-    "phone": "",
-    "address": "",
-    "outstanding": 50,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-11 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000079",
-    "customer": "T2",
-    "phone": "",
-    "address": "",
-    "outstanding": 7100,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-11 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000080",
-    "customer": "JACKIE T",
-    "phone": "",
-    "address": "",
-    "outstanding": 4410,
-    "currency": "KES",
-    "notes": "Historical opening balance from 6 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000081",
-    "customer": "KOSEWE",
-    "phone": "",
-    "address": "",
-    "outstanding": 5250,
-    "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000082",
-    "customer": "AVERINA B2",
-    "phone": "",
-    "address": "",
-    "outstanding": 600,
-    "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
-  },
-  {
-    "id": "C000083",
+    "id": "C000052",
     "customer": "Skynest 1403",
     "phone": "",
     "address": "",
     "outstanding": 1300,
     "currency": "KES",
     "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000084",
-    "customer": "Ridley D3",
+    "id": "C000053",
+    "customer": "GLOVO",
     "phone": "",
     "address": "",
-    "outstanding": 600,
+    "outstanding": 650,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-12 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-20 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000085",
-    "customer": "M6",
+    "id": "C000054",
+    "customer": "RIVERSIDE MANSION",
     "phone": "",
     "address": "",
-    "outstanding": 550,
+    "outstanding": 400,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-14 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-21 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000086",
-    "customer": "GEM COURT B8",
+    "id": "C000055",
+    "customer": "RETURN",
     "phone": "",
     "address": "",
-    "outstanding": 350,
+    "outstanding": 650,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-14 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-23 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000087",
-    "customer": "KWA MASAI",
+    "id": "C000056",
+    "customer": "TILL RETURN",
     "phone": "",
     "address": "",
-    "outstanding": 1100,
+    "outstanding": 29530,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-14 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 29 unpaid credit invoice(s) as of 2026-09-30 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000088",
-    "customer": "SIMIYU",
+    "id": "C000057",
+    "customer": "FUEL",
     "phone": "",
     "address": "",
-    "outstanding": 2750,
+    "outstanding": 2000,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 4 unpaid credit invoice(s) as of 2026-09-26 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000089",
-    "customer": "ELITE PLAZA  A6",
+    "id": "C000058",
+    "customer": "MPESA",
     "phone": "",
     "address": "",
-    "outstanding": 350,
+    "outstanding": 122305,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 26 unpaid credit invoice(s) as of 2026-09-30 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000090",
-    "customer": "Skyview N6",
+    "id": "C000059",
+    "customer": "ALEX CHEMIST",
     "phone": "",
     "address": "",
-    "outstanding": 1300,
+    "outstanding": 645,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 6 unpaid credit invoice(s) as of 2026-10-25 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000091",
-    "customer": "EMPERIUM A11",
+    "id": "C000060",
+    "customer": "SALIM",
     "phone": "",
     "address": "",
-    "outstanding": 1400,
+    "outstanding": 960,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-15 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-03 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000092",
-    "customer": "ACORN COURT  C1",
+    "id": "C000061",
+    "customer": "NJEMA HOTEL",
     "phone": "",
     "address": "",
-    "outstanding": 2400,
+    "outstanding": 2130,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-10-13 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000093",
-    "customer": "M.T.I Gate 27",
+    "id": "C000062",
+    "customer": "ANTONY T",
     "phone": "",
     "address": "",
-    "outstanding": 3750,
+    "outstanding": 195,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000094",
-    "customer": "71 JIPE CLOSE",
+    "id": "C000063",
+    "customer": "MKOREA 68",
     "phone": "",
     "address": "",
-    "outstanding": 1000,
+    "outstanding": 9600,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000095",
+    "id": "C000064",
     "customer": "OV 4",
     "phone": "",
     "address": "",
     "outstanding": 600,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-23 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000065",
+    "customer": "WILLADALE B3",
+    "phone": "",
+    "address": "",
+    "outstanding": 1150,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-26 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000066",
+    "customer": "MZEE  REHAN T",
+    "phone": "",
+    "address": "",
+    "outstanding": 9855,
+    "currency": "KES",
+    "notes": "Historical opening balance from 21 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000067",
+    "customer": "lillian",
+    "phone": "",
+    "address": "",
+    "outstanding": 3000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000068",
+    "customer": "J2",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-29 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000069",
+    "customer": "GOODLIFE CHANDARANA",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-10-29 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000070",
+    "customer": "HILLVIEW 23",
+    "phone": "",
+    "address": "",
+    "outstanding": 6000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 5 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000071",
+    "customer": "RICHMOND COURT H2",
+    "phone": "",
+    "address": "",
+    "outstanding": 2200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-01 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000072",
+    "customer": "solar",
+    "phone": "",
+    "address": "",
+    "outstanding": 4750,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000073",
+    "customer": "Munira",
+    "phone": "",
+    "address": "",
+    "outstanding": 7700,
+    "currency": "KES",
+    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000074",
+    "customer": "COMISSION PARKISTAN",
+    "phone": "",
+    "address": "",
+    "outstanding": 700,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-03 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000075",
+    "customer": "New kitisuru",
+    "phone": "",
+    "address": "",
+    "outstanding": 10300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000076",
+    "customer": "JACKIE T",
+    "phone": "",
+    "address": "",
+    "outstanding": 2770,
+    "currency": "KES",
+    "notes": "Historical opening balance from 5 unpaid credit invoice(s) as of 2026-11-12 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000077",
+    "customer": "DUPLEX A3",
+    "phone": "",
+    "address": "",
+    "outstanding": 3400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-06 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000078",
+    "customer": "GEM COURT B12",
+    "phone": "",
+    "address": "",
+    "outstanding": 1650,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-06 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000079",
+    "customer": "AVERINA B11",
+    "phone": "",
+    "address": "",
+    "outstanding": 3550,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-06 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000080",
+    "customer": "KENINDIA HS 6",
+    "phone": "",
+    "address": "",
+    "outstanding": 6180,
+    "currency": "KES",
+    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-11-18 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000081",
+    "customer": "T2",
+    "phone": "",
+    "address": "",
+    "outstanding": 7100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-09 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000082",
+    "customer": "RUMAISA D2",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-09 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000083",
+    "customer": "HILLCREST OFFICE",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-09 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000084",
+    "customer": "BENDERA LANE 36A",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-10 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000085",
+    "customer": "93 HS A3",
+    "phone": "",
+    "address": "",
+    "outstanding": 3400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-11 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000086",
+    "customer": "Ridley D3",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-11 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000087",
+    "customer": "ORCHID RESIDENCY B201",
+    "phone": "",
+    "address": "",
+    "outstanding": 3400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-11 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000088",
+    "customer": "MALKIA A5",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-11 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000089",
+    "customer": "KAYA RESIDENCE B602",
+    "phone": "",
+    "address": "",
+    "outstanding": 8280,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000090",
+    "customer": "Runda grove 295",
+    "phone": "",
+    "address": "",
+    "outstanding": 2100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-11 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000091",
+    "customer": "WESTLANDS COURT HS1",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-12 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000092",
+    "customer": "SEPAL GARNET 401",
+    "phone": "",
+    "address": "",
+    "outstanding": 4980,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-12 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000093",
+    "customer": "114 Shinyalu",
+    "phone": "",
+    "address": "",
+    "outstanding": 4000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-13 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000094",
+    "customer": "CONVENT 36",
+    "phone": "",
+    "address": "",
+    "outstanding": 1800,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-13 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000095",
+    "customer": "ROSSLYN HS4",
+    "phone": "",
+    "address": "",
+    "outstanding": 1800,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-13 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000096",
     "customer": "JEANS PARK B3",
     "phone": "",
     "address": "",
-    "outstanding": 6800,
+    "outstanding": 700,
     "currency": "KES",
-    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-13 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000097",
-    "customer": "PINERIDGE A2",
+    "customer": "SKYVIEW HS 1",
     "phone": "",
     "address": "",
-    "outstanding": 1100,
+    "outstanding": 600,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
     "id": "C000098",
-    "customer": "FAHARI 203",
+    "customer": "WESTLANDS GARDEN 6",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000099",
+    "customer": "ASMIN B7",
+    "phone": "",
+    "address": "",
+    "outstanding": 1250,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000100",
+    "customer": "Sohil rejency 2A",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000101",
+    "customer": "Hawa court B3",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000102",
+    "customer": "JACKIE JUMBA",
+    "phone": "",
+    "address": "",
+    "outstanding": 265,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000103",
+    "customer": "ANMOL D4",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000104",
+    "customer": "71 JIPE CLOSE",
+    "phone": "",
+    "address": "",
+    "outstanding": 9000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 3 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000105",
+    "customer": "SHANGRILA APARTMENT 1904",
     "phone": "",
     "address": "",
     "outstanding": 700,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000099",
-    "customer": "BLACK GATE",
+    "id": "C000106",
+    "customer": "PEARL SQUARE A12",
+    "phone": "",
+    "address": "",
+    "outstanding": 2100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000107",
+    "customer": "NURIANA F3",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000108",
+    "customer": "MARINA BAY B17F",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000109",
+    "customer": "SAVANNAH SANDS A4",
+    "phone": "",
+    "address": "",
+    "outstanding": 6800,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000110",
+    "customer": "OV4",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000111",
+    "customer": "Palm flats A2",
+    "phone": "",
+    "address": "",
+    "outstanding": 2100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000112",
+    "customer": "Pinewood villas hse6",
+    "phone": "",
+    "address": "",
+    "outstanding": 3000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-14 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000113",
+    "customer": "J14",
+    "phone": "",
+    "address": "",
+    "outstanding": 2030,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000114",
+    "customer": "Skyview N6",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000115",
+    "customer": "ALDAR AL DAR APRT C8",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000116",
+    "customer": "Royal garden 404",
+    "phone": "",
+    "address": "",
+    "outstanding": 550,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000117",
+    "customer": "ALMONT COURT B5",
+    "phone": "",
+    "address": "",
+    "outstanding": 2500,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000118",
+    "customer": "SEPAL GARNET 603",
+    "phone": "",
+    "address": "",
+    "outstanding": 8600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000119",
+    "customer": "CAPITAL M 1003",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000120",
+    "customer": "SAKINA C3",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000121",
+    "customer": "PILI PILI VILLA B3",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000122",
+    "customer": "BELLWAYS B4",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000123",
+    "customer": "GEM COURT B8",
+    "phone": "",
+    "address": "",
+    "outstanding": 2500,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000124",
+    "customer": "RUSTIC RIDGE HSE 19",
     "phone": "",
     "address": "",
     "outstanding": 3400,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   },
   {
-    "id": "C000100",
-    "customer": "RIVERVIEW B8",
+    "id": "C000125",
+    "customer": "BOGORIA 2",
+    "phone": "",
+    "address": "",
+    "outstanding": 3000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000126",
+    "customer": "MKOKO CLOSE B6",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000127",
+    "customer": "LEO RESIDENCE C1-1",
+    "phone": "",
+    "address": "",
+    "outstanding": 1100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000128",
+    "customer": "PEARL HEIGHTS B6",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000129",
+    "customer": "93 Cottage 9A",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000130",
+    "customer": "93 hse 17",
+    "phone": "",
+    "address": "",
+    "outstanding": 700,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000131",
+    "customer": "Greenville B12",
+    "phone": "",
+    "address": "",
+    "outstanding": 15400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000132",
+    "customer": "SIAYA PARK APRNTS C52",
+    "phone": "",
+    "address": "",
+    "outstanding": 1050,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000133",
+    "customer": "ROYAL PRIDE B8",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000134",
+    "customer": "93 HSE 28",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000135",
+    "customer": "Knight 103",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-15 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000136",
+    "customer": "MCHAINA",
+    "phone": "",
+    "address": "",
+    "outstanding": 1100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000137",
+    "customer": "Gate 99",
+    "phone": "",
+    "address": "",
+    "outstanding": 370,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000138",
+    "customer": "jahazi 3rd flr village enterprise",
+    "phone": "",
+    "address": "",
+    "outstanding": 3600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000139",
+    "customer": "Springvalley b/park",
+    "phone": "",
+    "address": "",
+    "outstanding": 700,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000140",
+    "customer": "WELLS B2",
+    "phone": "",
+    "address": "",
+    "outstanding": 3000,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000141",
+    "customer": "J3",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000142",
+    "customer": "M.T.I Gate 27",
+    "phone": "",
+    "address": "",
+    "outstanding": 1050,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000143",
+    "customer": "IVORY TERRACE EG4",
+    "phone": "",
+    "address": "",
+    "outstanding": 700,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000144",
+    "customer": "GOODLIFE RAPHTA SQUARE",
+    "phone": "",
+    "address": "",
+    "outstanding": 1050,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000145",
+    "customer": "SAKINA B1",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000146",
+    "customer": "MANTAS 402",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000147",
+    "customer": "ELITE PLAZA A1",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000148",
+    "customer": "GOODLIFE WESTGATE",
+    "phone": "",
+    "address": "",
+    "outstanding": 2100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000149",
+    "customer": "PEARL SQUARE A10",
+    "phone": "",
+    "address": "",
+    "outstanding": 4300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000150",
+    "customer": "T14",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000151",
+    "customer": "Elite villas hse2",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000152",
+    "customer": "Silver terrace 6A",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-16 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000153",
+    "customer": "M4",
+    "phone": "",
+    "address": "",
+    "outstanding": 450,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000154",
+    "customer": "MAJID 3D",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000155",
+    "customer": "SHINYALU 72",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000156",
+    "customer": "SEPAL 302",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000157",
+    "customer": "PINERIDGE A2",
+    "phone": "",
+    "address": "",
+    "outstanding": 2200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000158",
+    "customer": "Palm springs A8",
+    "phone": "",
+    "address": "",
+    "outstanding": 1400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000159",
+    "customer": "RHAPTA ROYAL HSE 1",
+    "phone": "",
+    "address": "",
+    "outstanding": 1050,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000160",
+    "customer": "KOSEWE",
+    "phone": "",
+    "address": "",
+    "outstanding": 5500,
+    "currency": "KES",
+    "notes": "Historical opening balance from 2 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000161",
+    "customer": "NO 80 Management",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000162",
+    "customer": "Runda meadows 493",
+    "phone": "",
+    "address": "",
+    "outstanding": 1950,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000163",
+    "customer": "SUNTON VALLEY B8",
+    "phone": "",
+    "address": "",
+    "outstanding": 3100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000164",
+    "customer": "CRIMSON COURT A4",
     "phone": "",
     "address": "",
     "outstanding": 3400,
     "currency": "KES",
-    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-09-16 00:00:00",
-    "created_at": "2026-09-17T09:54:09.801Z",
-    "updated_at": "2026-09-17T09:54:09.801Z"
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000165",
+    "customer": "MILLIE COURT HSE 12",
+    "phone": "",
+    "address": "",
+    "outstanding": 2100,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000166",
+    "customer": "Volaire A802",
+    "phone": "",
+    "address": "",
+    "outstanding": 2600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000167",
+    "customer": "NELION",
+    "phone": "",
+    "address": "",
+    "outstanding": 350,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000168",
+    "customer": "Westlands commercial second floor suite 5",
+    "phone": "",
+    "address": "",
+    "outstanding": 400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000169",
+    "customer": "ROSSLYN 21",
+    "phone": "",
+    "address": "",
+    "outstanding": 1950,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000170",
+    "customer": "MANGO COTTAGE SHANZU",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000171",
+    "customer": "GOLD PARK HOMES",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000172",
+    "customer": "NO 80 B6",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000173",
+    "customer": "PPEARL OF RIVERSIDE 3A",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000174",
+    "customer": "muthangri res unit1",
+    "phone": "",
+    "address": "",
+    "outstanding": 3400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000175",
+    "customer": "FAHARI 203",
+    "phone": "",
+    "address": "",
+    "outstanding": 600,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000176",
+    "customer": "PILODIA",
+    "phone": "",
+    "address": "",
+    "outstanding": 2400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000177",
+    "customer": "ROYAL PRIDE A6",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000178",
+    "customer": "HARVINS F12",
+    "phone": "",
+    "address": "",
+    "outstanding": 1300,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000179",
+    "customer": "Tarrow apart D20",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000180",
+    "customer": "SOHAIL PARK A12",
+    "phone": "",
+    "address": "",
+    "outstanding": 5050,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000181",
+    "customer": "KAYA A403",
+    "phone": "",
+    "address": "",
+    "outstanding": 650,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000182",
+    "customer": "BISHAN COURT B7",
+    "phone": "",
+    "address": "",
+    "outstanding": 1580,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000183",
+    "customer": "PURPLE HAZE B205",
+    "phone": "",
+    "address": "",
+    "outstanding": 1200,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-17 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
+  },
+  {
+    "id": "C000184",
+    "customer": "MARUTI D2",
+    "phone": "",
+    "address": "",
+    "outstanding": 3400,
+    "currency": "KES",
+    "notes": "Historical opening balance from 1 unpaid credit invoice(s) as of 2026-11-18 00:00:00",
+    "created_at": "2026-11-18T07:04:14.419Z",
+    "updated_at": "2026-11-18T07:04:14.419Z"
   }
 ]
