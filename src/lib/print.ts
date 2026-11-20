@@ -168,7 +168,7 @@ export async function printReceiptEscPos(data: {
   //   await navigator.usb.device.selectConfiguration(1);
   //   await navigator.usb.device.claimInterface(0);
   //   await navigator.usb.device.transferOut(1, new TextEncoder().encode(receipt));
-  // }
+  }
 }
 
 /** Send receipt to the laptop's print server (cross-device printing).
@@ -246,7 +246,6 @@ export function receiptFromOrder(
     };
   }
 ): any {
-  const s = opts.settings ?? {};
   const items = order.productLine ? order.productLine.split(" + ").map((s: string) => {
     const [qtyStr, name] = s.split(" x ");
     return {
@@ -257,6 +256,7 @@ export function receiptFromOrder(
     };
   }) : [];
 
+  const s = opts.settings ?? {};
   const mpesaCode = order.mpesa_code || order.notes?.match(/CODE[:\s]*(\S+)/)?.[1] || null;
 
   return {
