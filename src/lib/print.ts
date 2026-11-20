@@ -168,7 +168,7 @@ export async function printReceiptEscPos(data: {
   //   await navigator.usb.device.selectConfiguration(1);
   //   await navigator.usb.device.claimInterface(0);
   //   await navigator.usb.device.transferOut(1, new TextEncoder().encode(receipt));
-  }
+  // }
 }
 
 /** Send receipt to the laptop's print server (cross-device printing).
