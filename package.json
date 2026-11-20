@@ -14,6 +14,7 @@
     "test:repayment": "tsx src/scripts/repayment-test.ts",
     "test:repayment-service": "tsx src/scripts/repayment-service-test.ts",
     "test:cache": "tsx src/scripts/cache-invalidation-test.ts",
+    "test:print": "tsx src/scripts/print-smoke-test.ts",
     "import:aronium": "tsx src/scripts/import-aronium.ts",
     "import:aronium-sqlite": "tsx src/scripts/import-aronium-sqlite.ts",
     "lint": "eslint"

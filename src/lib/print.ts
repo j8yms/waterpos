@@ -36,16 +36,36 @@ function escPad(s: string, width: number): string {
 }
 
 function escCenter(s: string, width: number): string {
+  if (s.length >= width) return s;
   const padL = Math.floor((width - s.length) / 2);
   return " ".repeat(padL) + s + " ".repeat(width - s.length - padL);
 }
 
-function escLine(text: string, align: "left" | "center" | "right", width: number = 48): string {
-  const padded = escPad(text, width);
-  if (align === "left") return CMD_ALIGN_LEFT + padded + CR;
-  if (align === "center") return CMD_ALIGN_CENTER + padded + CR;
-  return CMD_ALIGN_RIGHT + padded + CR;
+function escRight(s: string, width: number): string {
+  return s.length >= width ? s : " ".repeat(width - s.length) + s;
 }
+
+function escLine(text: string, align: "left" | "center" | "right", width: number = 48): string {
+  if (align === "left") return CMD_ALIGN_LEFT + escPad(text, width) + CR;
+  if (align === "center") return CMD_ALIGN_CENTER + escCenter(text, width) + CR;
+  return CMD_ALIGN_RIGHT + escRight(text, width) + CR;
+}
+
+// Receipt settings flags. `undefined` means "setting absent" and falls back to
+// the historical (pre-settings) layout so existing receipts do not change.
+export type ReceiptSettings = {
+  footerText?: string;
+  receiptWidth?: "58" | "80";
+  showQty?: boolean;
+  showPrices?: boolean;
+  showDiscounts?: boolean;
+  showDelivery?: boolean;
+  showPaymentMethod?: boolean;
+  showMpesaRef?: boolean;
+  showOutstanding?: boolean;
+  discount?: number;
+  deliveryFee?: number;
+};
 
 // Build the full ESC/POS receipt data string
 export function buildReceipt(data: {
@@ -65,14 +85,31 @@ export function buildReceipt(data: {
   paymentMethod: string;
   mpesaCode: string | null;
   outstandingBalance: number;
-}): string {
+} & ReceiptSettings): string {
   const lines: string[] = [];
+
+  // Settings fallbacks: undefined = legacy behaviour (settings never provided).
+  const showQty = data.showQty ?? true;
+  const showPrices = data.showPrices ?? true;
+  const showDiscounts = data.showDiscounts ?? false;
+  const showDelivery = data.showDelivery ?? false;
+  const showPaymentMethod = data.showPaymentMethod ?? false;
+  const showMpesaRef = data.showMpesaRef ?? true;
+  const showOutstanding = data.showOutstanding ?? true;
 
   // ── Initialise printer ─────────────────────────────────
   lines.push(CMD_INIT);
 
   // ── Header: High-contrast 576px bitmap ────────────────
   lines.push(CMD_ALIGN_CENTER);
+
+  // This builder has no ESC/POS raster (GS v 0) support, so a logo cannot be
+  // printed. Never drop it silently: warn and print a visible note instead.
+  if (data.logoBase64) {
+    console.warn("⚠️ Receipt logo present but logo unsupported on thermal (no ESC/POS bitmap support) — logo skipped");
+    lines.push(escLine("[logo unsupported on thermal]", "center"));
+  }
+
   lines.push(data.businessName);
 
   // ── Address ───────────────────────────────────────────
@@ -98,9 +135,13 @@ export function buildReceipt(data: {
   // ── Items: 48-column format ────────────────────────────
   for (const item of data.items) {
     lines.push(`${item.name}`);
-    const qtyPrice = `${item.qty} x Ksh ${item.unitPrice.toFixed(2)}`;
-    const subtotal = `${item.total.toFixed(2)}`;
-    lines.push(`${qtyPrice} ${subtotal.padStart(6)}`);
+    const parts: string[] = [];
+    if (showQty) parts.push(`${item.qty} x`);
+    if (showPrices) {
+      parts.push(`Ksh ${item.unitPrice.toFixed(2)}`);
+      parts.push(item.total.toFixed(2).padStart(6));
+    }
+    if (parts.length > 0) lines.push(parts.join(" "));
   }
 
   // ── Totals & Balances ──────────────────────────────────
@@ -121,11 +162,36 @@ export function buildReceipt(data: {
   lines.push(`PAID AMOUNT: ${data.subtotal.toFixed(2)} KSH`);
   lines.push(`AMOUNT DUE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
 
+  // ── Discount ───────────────────────────────────────────
+  if (showDiscounts) {
+    lines.push(`DISCOUNT: ${(data.discount || 0).toFixed(2)} KSH`);
+  }
+
+  // ── Delivery charge ────────────────────────────────────
+  if (showDelivery) {
+    lines.push(`DELIVERY: ${(data.deliveryFee || 0).toFixed(2)} KSH`);
+  }
+
+  // ── Payment method ─────────────────────────────────────
+  if (showPaymentMethod) {
+    lines.push(`PAYMENT METHOD: ${data.paymentMethod || "CASH"}`);
+  }
+
   // ── Customer Outstanding Balance ───────────────────────
-  lines.push(`OUTSTANDING BALANCE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
+  if (showOutstanding) {
+    lines.push(`OUTSTANDING BALANCE: ${(data.outstandingBalance || 0).toFixed(2)} KSH`);
+  }
 
   // ── Payment Code footer ────────────────────────────────
-  lines.push(`PAYMENT CODE: ${data.mpesaCode || "—"}`);
+  if (showMpesaRef) {
+    lines.push(`PAYMENT CODE: ${data.mpesaCode || "—"}`);
+  }
+
+  // ── Custom footer (centered, max 48 cols) ──────────────
+  const footer = (data.footerText || "").trim();
+  if (footer) {
+    lines.push(escLine(footer.slice(0, 48), "center"));
+  }
 
   // ── Auto-cut command ───────────────────────────────────
   lines.push(CMD_CUT);
@@ -193,11 +259,10 @@ export async function printToNetwork(data: {
   paymentMethod: string;
   mpesaCode: string | null;
   outstandingBalance: number;
-}): Promise<void> {
+}): Promise<{ ok: boolean; error?: string }> {
   const printServerUrl = process.env.NEXT_PUBLIC_PRINT_SERVER_URL;
   if (!printServerUrl) {
-    console.log("🖨️ No print server configured, using local print");
-    return;
+    return { ok: false, error: "Print server not configured (set NEXT_PUBLIC_PRINT_SERVER_URL)" };
   }
 
   const receipt = buildReceipt({
@@ -213,8 +278,10 @@ export async function printToNetwork(data: {
     });
     if (!res.ok) throw new Error(`Print server returned ${res.status}`);
     console.log("✅ Network print sent to", printServerUrl);
+    return { ok: true };
   } catch (err) {
-    console.warn("⚠️ Network print failed, falling back to local:", err);
+    console.warn("⚠️ Network print failed:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Print failed - check printer connection" };
   }
 }
 
@@ -258,6 +325,7 @@ export function receiptFromOrder(
 
   const s = opts.settings ?? {};
   const mpesaCode = order.mpesa_code || order.notes?.match(/CODE[:\s]*(\S+)/)?.[1] || null;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
   return {
     businessName: s.businessName || opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
@@ -286,5 +354,7 @@ export function receiptFromOrder(
     showPaymentMethod: s.showPaymentMethod,
     showMpesaRef: s.showMpesaRef,
     showOutstanding: s.showOutstanding,
+    discount: num(order.discount ?? order.discount_amount),
+    deliveryFee: num(order.delivery_fee ?? order.glovo_fee ?? order.delivery_charge),
   };
 }
