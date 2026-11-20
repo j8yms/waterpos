@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { readAllLedgerRows, SheetsConfigError } from "@/lib/sheets";
+import { ensureSpreadsheetStructure, readAllLedgerRows, readTab, SheetsConfigError } from "@/lib/sheets";
 import { parseProductLine } from "@/lib/pricing";
 import { GLOVO_COMMISSION } from "@/lib/config";
 import type { DebtAccount, DebtRow, GlovoMetrics, ReportsPayload, RiderMatrixRow, TopSellingItem } from "@/lib/types";
@@ -21,10 +21,55 @@ export async function GET(request: Request) {
   if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
 
   try {
+    await ensureSpreadsheetStructure();
     const ledger = await readAllLedgerRows();
     const orders = ledger.map((l) => l.order);
 
     const debts = buildDebtsLedger(orders);
+
+    // Merge opening balances (migrated Aronium debts) into the debt ledger.
+    try {
+      const od = await readTab("OPENING_DEBTS");
+      for (const r of od.rows) {
+        if (String(r.status ?? "").toUpperCase() === "SETTLED") continue;
+        const outstanding = Number(r.outstanding);
+        if (!Number.isFinite(outstanding) || outstanding <= 0) continue;
+        const customer = String(r.customer ?? "").trim();
+        if (!customer) continue;
+        const existing = debts.find((d) => d.customer.toLowerCase() === customer.toLowerCase());
+        const row: DebtRow = {
+          id: String(r.id ?? ""),
+          source: "opening",
+          date: String(r.debt_date ?? ""),
+          time: "",
+          total: Number(r.original_amount) || outstanding,
+          balance: outstanding,
+          pay_status: "PENDING",
+          payment_method: "CREDIT",
+          driver: "OPENING BALANCE",
+        };
+        if (existing) {
+          existing.rows.push(row);
+          existing.outstanding = Math.round((existing.outstanding + outstanding) * 100) / 100;
+          existing.numberOfRows = existing.rows.length;
+          if (!existing.phone) existing.phone = String(r.phone ?? "");
+          if (!existing.house) existing.house = String(r.address ?? "");
+        } else {
+          debts.push({
+            customer,
+            phone: String(r.phone ?? ""),
+            house: String(r.address ?? ""),
+            numberOfRows: 1,
+            outstanding,
+            rows: [row],
+          });
+        }
+      }
+      debts.sort((a, b) => b.outstanding - a.outstanding);
+    } catch {
+      // OPENING_DEBTS tab may not exist yet; ignore.
+    }
+
     const riderMatrix = buildRiderMatrix(orders);
     const glovo = buildGlovoMetrics(orders);
     const topSelling = buildTopSelling(orders);
@@ -55,6 +100,7 @@ function buildDebtsLedger(orders: any[]): DebtAccount[] {
 
     const row: DebtRow = {
       id: o.id,
+      source: "order",
       date: String(o.date ?? ""),
       time: String(o.time ?? ""),
       total: Math.round(o.total * 100) / 100,
