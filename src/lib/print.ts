@@ -26,6 +26,17 @@ export interface ReceiptData {
   paymentMethod?: string;
   mpesaCode?: string;
   operator: string;
+  // Receipt settings (optional, from RECEIPT_SETTINGS tab)
+  logoDataUrl?: string;
+  footerText?: string;
+  receiptWidth?: "58" | "80";
+  showQty?: boolean;
+  showPrices?: boolean;
+  showDiscounts?: boolean;
+  showDelivery?: boolean;
+  showPaymentMethod?: boolean;
+  showMpesaRef?: boolean;
+  showOutstanding?: boolean;
 }
 
 const ESC = "\u001b";
@@ -230,7 +241,7 @@ export async function printToNetwork(data: ReceiptData): Promise<void> {
 
 export function receiptFromOrder(
   order: any,
-  opts: { operator: string; businessName?: string }
+  opts: { operator: string; businessName?: string; settings?: Partial<ReceiptData> }
 ): ReceiptData {
   const lines: ReceiptLine[] = [
     {
@@ -241,14 +252,16 @@ export function receiptFromOrder(
     },
   ];
 
+  const s = opts.settings ?? {};
   return {
-    businessName: opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
+    businessName: s.businessName || opts.businessName || "MIST WATER AND GAS DISTRIBUTORS",
+    businessTagline: s.businessTagline,
     orderId: order.id,
     date: order.date,
     time: order.time,
     customer: order.customer,
-    phone: order.phone,
-    address: order.address,
+    phone: s.phone || order.phone,
+    address: s.address || order.address,
     driver: order.driver,
     lines,
     subtotal: order.total,
@@ -259,5 +272,15 @@ export function receiptFromOrder(
     paymentMethod: order.payment_method || undefined,
     mpesaCode: order.mpesa_code || undefined,
     operator: opts.operator,
+    logoDataUrl: s.logoDataUrl,
+    footerText: s.footerText,
+    receiptWidth: s.receiptWidth,
+    showQty: s.showQty,
+    showPrices: s.showPrices,
+    showDiscounts: s.showDiscounts,
+    showDelivery: s.showDelivery,
+    showPaymentMethod: s.showPaymentMethod,
+    showMpesaRef: s.showMpesaRef,
+    showOutstanding: s.showOutstanding,
   };
 }
