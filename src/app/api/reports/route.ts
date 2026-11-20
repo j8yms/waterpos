@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth";
 import { ensureSpreadsheetStructure, invalidateCache, readAllLedgerRows, readTab, SheetsConfigError, updateRow } from "@/lib/sheets";
 import { buildDebtsLedger } from "@/lib/debts";
+import { removeDebt, DebtRemovalError } from "@/lib/debt-removal";
 import { parseProductLine } from "@/lib/pricing";
 import { GLOVO_COMMISSION } from "@/lib/config";
 import type { DebtAccount, DebtRow, DispatchOrder, GlovoMetrics, ReportsPayload, RiderMatrixRow, TopSellingItem } from "@/lib/types";
@@ -113,45 +114,19 @@ export async function DELETE(request: Request) {
   const user = requireRole(request, "management");
   if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
 
+  let body: any;
+  try { body = await request.json(); } catch { body = {}; }
+  const customer = String(body?.customer ?? "").trim();
+  if (!customer) return Response.json({ error: "Customer name required." }, { status: 400 });
+
+  const sheets = { readAllLedgerRows, readTab, updateRow, invalidateCache };
   try {
-    const { customer } = await request.json();
-    if (!customer) return Response.json({ error: "Customer name required." }, { status: 400 });
-
-    const ledger = await readAllLedgerRows();
-    const ordersToRemove = ledger.filter(
-      (r) =>
-        String(r.order.customer || "").trim().toLowerCase() ===
-          String(customer).trim().toLowerCase() &&
-        (r.order.pay_status === "PENDING" ||
-          String(r.order.payment_method || "").toUpperCase() === "CREDIT")
-    );
-
-    if (!ordersToRemove.length) {
-      return Response.json({ error: "No matching pending/credit orders found." }, { status: 404 });
-    }
-
-    // Remove the matched orders from their respective tabs
-    const updates = ordersToRemove.map((r) => {
-      const update: Partial<DispatchOrder> = {
-        pay_status: "REJECTED",
-        payment_method: "",
-        balance: 0,
-        last_payment_at: new Date().toISOString(),
-        notes: `Cleared debt for ${customer}: ${r.order.notes || ""}`,
-      };
-      return updateRow(r.tab, r.order._row, update as Record<string, any>);
-    });
-
-    await Promise.all(updates);
-    invalidateCache("tab:ORDERS");
-    invalidateCache("tab:REPORTS");
-
-    return Response.json({
-      ok: true,
-      removed: ordersToRemove.length,
-      message: `${customer}'s debt orders marked as REJECTED and cleared.`,
-    });
+    const result = await removeDebt(customer, sheets);
+    return Response.json(result);
   } catch (err) {
+    if (err instanceof DebtRemovalError) {
+      return Response.json({ error: err.message }, { status: err.status });
+    }
     return Response.json({ error: errMessage(err) }, { status: 500 });
   }
 }
