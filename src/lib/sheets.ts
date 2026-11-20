@@ -127,7 +127,10 @@ export async function getSheets(): Promise<sheets_v4.Sheets> {
   }
 }
 
+let structureVerified = false;
+
 export async function ensureSpreadsheetStructure(): Promise<void> {
+  if (structureVerified) return;
   const sheets = await getSheets();
   const spreadsheetId = getSpreadsheetId();
 
@@ -186,6 +189,7 @@ export async function ensureSpreadsheetStructure(): Promise<void> {
       });
     }
   }
+  structureVerified = true;
 }
 
 export function columnName(index: number): string {
