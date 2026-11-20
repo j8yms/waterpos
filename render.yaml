@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run start
-    healthCheckPath: /pos
+    healthCheckPath: /api/health
     autoDeploy: true
     # Env vars are set in the Render dashboard (GOOGLE_CREDENTIALS,
     # SPREADSHEET_ID, KRA_ETIMS_MOCK, APP_SECRET) so secrets stay in Render's

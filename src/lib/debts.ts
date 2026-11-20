@@ -9,15 +9,21 @@ export function isSharedCustomerName(name: string, customers: { location?: strin
 
 export function rowBalance(o: { balance?: number | string; total: number }): number {
   const b = Number(o.balance);
-  return Number.isFinite(b) && b > 0 ? Math.round(b * 100) / 100 : Math.round(o.total * 100) / 100;
+  if (Number.isFinite(b) && b > 0) return Math.round(b * 100) / 100;
+  const t = Number(o.total);
+  if (Number.isFinite(t) && t > 0) return Math.round(t * 100) / 100;
+  return 0;
 }
 
 export function buildDebtsLedger(orders: any[], openingDebts: any[] = []): DebtAccount[] {
   const groups = new Map<string, DebtAccount>();
+  let skipped = 0;
   for (const o of orders) {
     const isRelevant = o.pay_status === "PENDING" || String(o.payment_method || "").toUpperCase() === "CREDIT";
     if (!isRelevant) continue;
-    const key = `name:${String(o.customer || "WALK-IN CUSTOMER").trim().toLowerCase()}`;
+    const custName = String(o.customer ?? "").trim();
+    if (!custName) { skipped++; continue; }
+    const key = `name:${custName.toLowerCase()}`;
     const existing = groups.get(key);
     if (existing && existing.rows.some((r) => r.id === o.id)) continue;
 
@@ -85,5 +91,6 @@ export function buildDebtsLedger(orders: any[], openingDebts: any[] = []): DebtA
     }
   }
 
+  if (skipped > 0) console.log("buildDebtsLedger: skipped", skipped, "malformed rows");
   return [...groups.values()].sort((a, b) => b.outstanding - a.outstanding);
 }
