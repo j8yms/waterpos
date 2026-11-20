@@ -14,9 +14,8 @@ check("same name different ids: different balances via opening debts", () => {
     { id: "D2", customer: "Alice", customer_id: "C2", outstanding: 50, original_amount: 50, status: "OPEN" },
   ];
   const debts = buildDebtsLedger(orders, opening);
-  // Both group under "Alice" name, so they merge into one account with 150 total
-  assert.equal(debts.length, 1);
-  assert.equal(debts[0].outstanding, 150);
+  // Composite keys → separate accounts
+  assert.equal(debts.length, 2);
 });
 
 check("balance includes opening debts only", () => {
@@ -50,6 +49,25 @@ check("isSharedCustomerName: WALK-IN → true", () => {
   assert.equal(isSharedCustomerName("WALK-IN CUSTOMER", customers), true);
 });
 
+check("composite key: two same-named customers with distinct opening debts → separate accounts", () => {
+  const orders: any[] = [];
+  const opening = [
+    { id: "D1", customer: "Alice", customer_id: "C1", outstanding: 100, original_amount: 100, status: "OPEN" },
+    { id: "D2", customer: "Alice", customer_id: "C2", outstanding: 50, original_amount: 50, status: "OPEN" },
+  ];
+  const debts = buildDebtsLedger(orders, opening);
+  assert.equal(debts.length, 2);
+  assert.equal(debts[0].outstanding + debts[1].outstanding, 150);
+});
+
+check("opening debt without customer_id falls back to name key", () => {
+  const orders: any[] = [];
+  const opening = [{ id: "D1", customer: "Bob", outstanding: 75, original_amount: 75, status: "OPEN" }];
+  const debts = buildDebtsLedger(orders, opening);
+  assert.equal(debts.length, 1);
+  assert.equal(debts[0].outstanding, 75);
+});
+
 check("two customers same name: combined balance documented", () => {
   const orders: any[] = [];
   const opening = [
@@ -57,6 +75,7 @@ check("two customers same name: combined balance documented", () => {
     { id: "D2", customer: "Alice", outstanding: 50, original_amount: 50, status: "OPEN" },
   ];
   const debts = buildDebtsLedger(orders, opening);
+  // Without customer_id, both key by name → single account with 150
   assert.equal(debts.length, 1);
   assert.equal(debts[0].outstanding, 150);
 });

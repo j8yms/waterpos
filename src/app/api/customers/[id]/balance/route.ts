@@ -36,12 +36,16 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
     }
 
     const debts = buildDebtsLedger(orders, openingDebts);
-    // Find the account for this customer (by name from orders, or by opening debt customer name)
-    const account = debts.find((d) => d.customer.toLowerCase() === customerName.toLowerCase()) 
-      ?? debts.find((d) => openingDebts.some((od: any) => String(od.customer ?? "").toLowerCase() === d.customer.toLowerCase()));
-    
-    const balance = account ? account.outstanding : 0;
-    const accountCount = account ? account.numberOfRows : 0;
+    // Find accounts for this customer: by customer_id (opening debt) or by name (order debt)
+    const matchingAccounts = debts.filter((d) => {
+      // Check if any opening debt row belongs to this customer_id
+      const hasOpeningForThis = d.rows.some((r: any) => r.source === "opening" && openingDebts.some((od: any) => String(od.id) === r.id));
+      // Or if the account name matches and has no opening debts (order debt)
+      const isOrderAccount = d.rows.some((r: any) => r.source === "order") && d.customer.toLowerCase() === customerName.toLowerCase() && !d.rows.some((r: any) => r.source === "opening");
+      return hasOpeningForThis || isOrderAccount;
+    });
+    const balance = matchingAccounts.reduce((s, a) => s + a.outstanding, 0);
+    const accountCount = matchingAccounts.reduce((s, a) => s + a.numberOfRows, 0);
     const sharedName = isSharedCustomerName(customerName, custRead.rows);
 
     const result = { customerId: id, balance, accountCount, sharedName };

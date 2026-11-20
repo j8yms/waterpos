@@ -17,7 +17,7 @@ export function buildDebtsLedger(orders: any[], openingDebts: any[] = []): DebtA
   for (const o of orders) {
     const isRelevant = o.pay_status === "PENDING" || String(o.payment_method || "").toUpperCase() === "CREDIT";
     if (!isRelevant) continue;
-    const key = String(o.customer || "WALK-IN CUSTOMER").trim();
+    const key = `name:${String(o.customer || "WALK-IN CUSTOMER").trim().toLowerCase()}`;
     const existing = groups.get(key);
     if (existing && existing.rows.some((r) => r.id === o.id)) continue;
 
@@ -33,7 +33,7 @@ export function buildDebtsLedger(orders: any[], openingDebts: any[] = []): DebtA
       driver: String(o.driver ?? ""),
     };
     const account: DebtAccount = existing ?? {
-      customer: key,
+      customer: String(o.customer || "WALK-IN CUSTOMER").trim(),
       phone: String(o.phone ?? ""),
       house: String(o.address ?? ""),
       numberOfRows: 0,
@@ -53,7 +53,9 @@ export function buildDebtsLedger(orders: any[], openingDebts: any[] = []): DebtA
     if (!Number.isFinite(outstanding) || outstanding <= 0) continue;
     const customer = String(r.customer ?? "").trim();
     if (!customer) continue;
-    const existing = groups.get(customer);
+    const customerId = String(r.customer_id ?? "").trim();
+    const key = customerId ? `id:${customerId.toLowerCase()}` : `name:${customer.toLowerCase()}`;
+    const existing = groups.get(key);
     const row: DebtRow = {
       id: String(r.id ?? ""),
       source: "opening",
@@ -72,7 +74,7 @@ export function buildDebtsLedger(orders: any[], openingDebts: any[] = []): DebtA
       if (!existing.phone) existing.phone = String(r.phone ?? "");
       if (!existing.house) existing.house = String(r.address ?? "");
     } else {
-      groups.set(customer, {
+      groups.set(key, {
         customer,
         phone: String(r.phone ?? ""),
         house: String(r.address ?? ""),
