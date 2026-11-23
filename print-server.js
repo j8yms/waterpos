@@ -154,9 +154,14 @@ function printRawToSharedPrinter(bytes, printerShare = PRINTER_SHARE_NAME) {
         } catch (_) {
           // ignore cleanup errors
         }
-        if (error) {
-          console.error(`❌ Raw print error for share "${printerShare}":`, stderr || error.message);
-          reject(new Error(`Print failed: ${stderr || error.message}`));
+        const output = `${stdout || ""}\n${stderr || ""}`;
+        // Windows `print` exits 0 even when the share is missing — the
+        // failure text lands on stdout, so check it explicitly.
+        const failed = /unable to initialize|not found|invalid|error|access is denied/i.test(output);
+        if (error || failed) {
+          const detail = (output.trim() || error?.message || "unknown error").slice(0, 300);
+          console.error(`❌ Raw print error for share "${printerShare}":`, detail);
+          reject(new Error(`Print failed: ${detail}`));
           return;
         }
         console.log(`✅ Raw ESC/POS job sent to "${printerShare}":`, stdout || "ok");
