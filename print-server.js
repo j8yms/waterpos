@@ -4,12 +4,15 @@
  * Receives HTTP POST print jobs from the DESKTOP POS and sends them
  * to the shared Windows printer via the Windows print spooler.
  *
- * Usage on laptop:
- *   npm install   (ensure dependencies)
+ * Usage on laptop (no npm install needed — only Node.js):
  *   node print-server.js
  *
- * Desktop POS sends: POST http://<laptop-lan-ip>:3001/print
- *   { "content": "<html>...</html>", "printerName": "optional" }
+ * Desktop POS sends either:
+ *   POST /print with Content-Type: application/text (or text/plain)
+ *     body = raw ESC/POS bytes (sent straight to the printer's RAW queue)
+ *   or
+ *   POST /print with Content-Type: application/json
+ *     { "content": "<html>...</html>", "printerName": "optional" }
  *
  * The printer MUST be shared on the host first:
  *   Right-click printer → Properties → Sharing → "Share this printer"
@@ -128,17 +131,74 @@ function printToSharedPrinter(html, printerShare = PRINTER_SHARE_NAME) {
 }
 
 /**
+ * Write raw ESC/POS bytes to a temp file and send them to the shared printer.
+ * The Windows spooler's `print` command passes the file through unchanged,
+ * so the printer interprets ESC/POS commands itself (no HTML rendering).
+ *
+ * @param {Buffer} bytes - ESC/POS data
+ * @param {string} printerShare - shared printer name
+ * @returns {Promise<void>}
+ */
+function printRawToSharedPrinter(bytes, printerShare = PRINTER_SHARE_NAME) {
+  return new Promise((resolve, reject) => {
+    try {
+      const tmpFile = path.join(TMP_DIR, `raw_${Date.now().toString(36)}.bin`);
+      fs.writeFileSync(tmpFile, bytes);
+
+      const sharePath = `\\\\localhost\\${printerShare}`;
+      const cmd = `cmd /c print /d:${sharePath} "${tmpFile}"`;
+
+      exec(cmd, (error, stdout, stderr) => {
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch (_) {
+          // ignore cleanup errors
+        }
+        if (error) {
+          console.error(`❌ Raw print error for share "${printerShare}":`, stderr || error.message);
+          reject(new Error(`Print failed: ${stderr || error.message}`));
+          return;
+        }
+        console.log(`✅ Raw ESC/POS job sent to "${printerShare}":`, stdout || "ok");
+        resolve();
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/**
  * Handle incoming print job POST requests.
- * Expected body: { "content": "<receipt-html>", "printerName": "optional" }
+ * Raw text bodies are ESC/POS; JSON bodies are the legacy HTML format.
  *
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
  * @returns {Promise<void>}
  */
 async function handlePrint(req, res) {
-  let body = "";
-  for await (const chunk of req) body += chunk;
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks);
+  const contentType = String(req.headers["content-type"] || "").toLowerCase();
 
+  if (contentType.includes("application/text") || contentType.includes("text/plain")) {
+    console.log(`🖨️  Raw ESC/POS request (${raw.length} bytes) → shared printer "${PRINTER_SHARE_NAME}"`);
+    try {
+      await printRawToSharedPrinter(raw);
+      applyCors(res);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, printer: PRINTER_SHARE_NAME, mode: "raw" }));
+    } catch (err) {
+      console.error("❌ Print job failed:", err);
+      applyCors(res);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Print failed" }));
+    }
+    return;
+  }
+
+  const body = raw.toString("utf8");
   let payload;
   try {
     payload = JSON.parse(body);
@@ -255,7 +315,8 @@ server.listen(PORT, HOST, () => {
   console.log(`   Hostname: ${os.hostname()}`);
   console.log(`   Temp dir: ${TMP_DIR}`);
   console.log(`\n📡 POS devices should POST to: http://<laptop-ip>:${PORT}/print`);
-  console.log(`   Payload: { "content": "<receipt-html>", "printerName": "optional" }`);
+  console.log(`   Raw ESC/POS: Content-Type application/text, body = ESC/POS bytes`);
+  console.log(`   Legacy HTML: Content-Type application/json, { "content": "<html>", "printerName": "optional" }`);
   console.log(`\n📝 Windows Sharing setup:`);
   console.log(`   1. Open "Control Panel > Devices and Printers"`);
   console.log(`   2. Right-click the XP-80 printer → "Printer properties"`);
